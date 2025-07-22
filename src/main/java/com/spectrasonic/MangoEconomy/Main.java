@@ -6,6 +6,7 @@ import com.spectrasonic.MangoEconomy.commands.MoneyCommand;
 import com.spectrasonic.MangoEconomy.commands.PayCommand;
 import com.spectrasonic.MangoEconomy.manager.EconomyManager;
 import com.spectrasonic.MangoEconomy.providers.VaultEconomyProvider;
+import com.spectrasonic.MangoEconomy.placeholders.MangoEconomyPlaceholders;
 import com.spectrasonic.Utils.CommandUtils;
 import com.spectrasonic.Utils.MessageUtils;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -16,7 +17,9 @@ public final class Main extends JavaPlugin {
 
     private EconomyManager economyManager;
     private VaultEconomyProvider vaultEconomyProvider;
+    private MangoEconomyPlaceholders placeholders;
     private boolean vaultEnabled = false;
+    private boolean placeholderAPIEnabled = false;
 
     @Override
     public void onEnable() {
@@ -28,6 +31,9 @@ public final class Main extends JavaPlugin {
         
         // Inicializar Vault si está disponible
         this.setupVault();
+        
+        // Inicializar PlaceholderAPI si está disponible
+        this.setupPlaceholderAPI();
         
         // Registrar comandos
         new EconomyCommand().register();
@@ -44,6 +50,10 @@ public final class Main extends JavaPlugin {
         if (vaultEnabled) {
             MessageUtils.sendConsoleMessage("<green>Integración con Vault habilitada.</green>");
         }
+        
+        if (placeholderAPIEnabled) {
+            MessageUtils.sendConsoleMessage("<green>Integración con PlaceholderAPI habilitada.</green>");
+        }
     }
 
     @Override
@@ -52,6 +62,12 @@ public final class Main extends JavaPlugin {
         if (vaultEnabled && vaultEconomyProvider != null) {
             getServer().getServicesManager().unregister(Economy.class, vaultEconomyProvider);
             MessageUtils.sendConsoleMessage("<yellow>Proveedor de Vault desregistrado.</yellow>");
+        }
+        
+        // Desregistrar PlaceholderAPI si está habilitado
+        if (placeholderAPIEnabled && placeholders != null) {
+            placeholders.unregister();
+            MessageUtils.sendConsoleMessage("<yellow>Placeholders de PlaceholderAPI desregistrados.</yellow>");
         }
         
         // Guardar datos antes de cerrar
@@ -110,5 +126,46 @@ public final class Main extends JavaPlugin {
     
     public EconomyManager getEconomyManager() {
         return economyManager;
+    }
+    
+    /**
+     * Configura la integración con PlaceholderAPI si está disponible
+     */
+    private void setupPlaceholderAPI() {
+        if (getServer().getPluginManager().getPlugin("PlaceholderAPI") == null) {
+            getLogger().info("PlaceholderAPI no encontrado. Funcionalidad de placeholders deshabilitada.");
+            return;
+        }
+        
+        try {
+            // Crear y registrar los placeholders
+            this.placeholders = new MangoEconomyPlaceholders(this);
+            
+            if (placeholders.register()) {
+                this.placeholderAPIEnabled = true;
+                getLogger().info("Placeholders de MangoEconomy registrados exitosamente.");
+            } else {
+                getLogger().warning("Error al registrar los placeholders de MangoEconomy.");
+                this.placeholderAPIEnabled = false;
+            }
+            
+        } catch (Exception e) {
+            getLogger().warning("Error al configurar PlaceholderAPI: " + e.getMessage());
+            this.placeholderAPIEnabled = false;
+        }
+    }
+    
+    /**
+     * Verifica si PlaceholderAPI está habilitado
+     */
+    public boolean isPlaceholderAPIEnabled() {
+        return placeholderAPIEnabled;
+    }
+    
+    /**
+     * Obtiene la instancia de placeholders
+     */
+    public MangoEconomyPlaceholders getPlaceholders() {
+        return placeholders;
     }
 }
