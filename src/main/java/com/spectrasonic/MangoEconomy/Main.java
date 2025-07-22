@@ -1,32 +1,114 @@
 package com.spectrasonic.MangoEconomy;
 
+import dev.jorel.commandapi.CommandAPI;
+import com.spectrasonic.MangoEconomy.commands.EconomyCommand;
+import com.spectrasonic.MangoEconomy.commands.MoneyCommand;
+import com.spectrasonic.MangoEconomy.commands.PayCommand;
+import com.spectrasonic.MangoEconomy.manager.EconomyManager;
+import com.spectrasonic.MangoEconomy.providers.VaultEconomyProvider;
 import com.spectrasonic.Utils.CommandUtils;
 import com.spectrasonic.Utils.MessageUtils;
-
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.plugin.ServicePriority;
+import net.milkbowl.vault.economy.Economy;
 
 public final class Main extends JavaPlugin {
 
+    private EconomyManager economyManager;
+    private VaultEconomyProvider vaultEconomyProvider;
+    private boolean vaultEnabled = false;
+
     @Override
     public void onEnable() {
+        // Inicializar CommandAPI
+        CommandAPI.onEnable();
+        
+        // Inicializar el sistema de economía
+        this.economyManager = new EconomyManager(this);
+        
+        // Inicializar Vault si está disponible
+        this.setupVault();
+        
+        // Registrar comandos
+        new EconomyCommand().register();
+        new MoneyCommand().register();
+        new PayCommand().register();
 
-        registerCommands();
-        registerEvents();
+        // Configurar utilidades
         CommandUtils.setPlugin(this);
+        
+        // Mensaje de inicio
         MessageUtils.sendStartupMessage(this);
-
+        MessageUtils.sendConsoleMessage("<green>Sistema de economía inicializado correctamente.</green>");
+        
+        if (vaultEnabled) {
+            MessageUtils.sendConsoleMessage("<green>Integración con Vault habilitada.</green>");
+        }
     }
 
     @Override
     public void onDisable() {
+        // Desregistrar Vault si está habilitado
+        if (vaultEnabled && vaultEconomyProvider != null) {
+            getServer().getServicesManager().unregister(Economy.class, vaultEconomyProvider);
+            MessageUtils.sendConsoleMessage("<yellow>Proveedor de Vault desregistrado.</yellow>");
+        }
+        
+        // Guardar datos antes de cerrar
+        if (economyManager != null) {
+            economyManager.savePlayerData();
+            MessageUtils.sendConsoleMessage("<yellow>Datos de economía guardados correctamente.</yellow>");
+        }
+        
+        CommandAPI.onDisable();
         MessageUtils.sendShutdownMessage(this);
     }
-
-    public void registerCommands() {
-        // Set Commands Here
+    
+    /**
+     * Configura la integración con Vault si está disponible
+     */
+    private void setupVault() {
+        if (getServer().getPluginManager().getPlugin("Vault") == null) {
+            getLogger().info("Vault no encontrado. Funcionalidad de Vault deshabilitada.");
+            return;
+        }
+        
+        try {
+            // Crear el proveedor de economía de Vault
+            this.vaultEconomyProvider = new VaultEconomyProvider(economyManager);
+            
+            // Registrar el proveedor con alta prioridad
+            getServer().getServicesManager().register(
+                Economy.class, 
+                vaultEconomyProvider, 
+                this, 
+                ServicePriority.Highest
+            );
+            
+            this.vaultEnabled = true;
+            getLogger().info("Proveedor de economía de Vault registrado exitosamente.");
+            
+        } catch (Exception e) {
+            getLogger().warning("Error al configurar Vault: " + e.getMessage());
+            this.vaultEnabled = false;
+        }
     }
-
-    public void registerEvents() {
-        // Set Events Here
+    
+    /**
+     * Verifica si Vault está habilitado
+     */
+    public boolean isVaultEnabled() {
+        return vaultEnabled;
+    }
+    
+    /**
+     * Obtiene el proveedor de Vault
+     */
+    public VaultEconomyProvider getVaultProvider() {
+        return vaultEconomyProvider;
+    }
+    
+    public EconomyManager getEconomyManager() {
+        return economyManager;
     }
 }

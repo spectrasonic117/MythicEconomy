@@ -16,7 +16,6 @@
 
             <!-- Dependencies version -->
             <paper.version>1.21.1-R0.1-SNAPSHOT</paper.version>
-            <acf.version>0.5.1-SNAPSHOT</acf.version>
             <lombok.version>1.18.38</lombok.version>
             <adventure.version>4.23.0</adventure.version>
 
@@ -39,6 +38,17 @@
                 <id>aikar</id>
                 <url>https://repo.aikar.co/content/groups/aikar/</url>
             </repository>
+
+            <repository>
+                <id>jitpack.io</id>
+                <url>https://jitpack.io</url>
+            </repository>
+
+            <repository>
+                <id>placeholderapi</id>
+                <url>https://repo.extendedclip.com/releases/</url>
+            </repository>
+
         </repositories>
 
         <dependencies>
@@ -48,13 +58,6 @@
                 <artifactId>paper-api</artifactId>
                 <version>${paper.version}</version>
                 <scope>provided</scope>
-            </dependency>
-
-            <!-- ACF Aikar -->
-            <dependency>
-                <groupId>co.aikar</groupId>
-                <artifactId>acf-paper</artifactId>
-                <version>${acf.version}</version>
             </dependency>
 
             <!-- Lombok -->
@@ -76,6 +79,32 @@
                 <artifactId>adventure-api</artifactId>
                 <version>${adventure.version}</version>
             </dependency>
+
+            <!-- Command API -->
+            <dependency>
+                <groupId>dev.jorel</groupId>
+                <artifactId>commandapi-bukkit-core</artifactId>
+                <version>10.1.2</version>
+                <scope>provided</scope>
+            </dependency>
+
+            <!-- Vault -->
+            <dependency>
+                <groupId>net.milkbowl.vault</groupId>
+                <artifactId>VaultAPI</artifactId>
+                <version>1.7</version>
+                <scope>provided</scope>
+            </dependency>
+
+            <!-- PlaceholderAPI -->
+            <dependency>
+                <groupId>me.clip</groupId>
+                <artifactId>placeholderapi</artifactId>
+                <version>2.11.6</version>
+                <scope>provided</scope>
+            </dependency>
+
+
         </dependencies>
 
         <build>
@@ -114,7 +143,7 @@
                         <outputDirectory>${project.basedir}/out</outputDirectory>
                         <finalName>${project.artifactId}-${project.version}</finalName>
                         <dependencyReducedPomLocation>${project.build.directory}/dependency-reduced-pom.xml</dependencyReducedPomLocation>
-                        <relocations>
+                        <!-- <relocations>
                             <relocation>
                                 <pattern>co.aikar.commands</pattern>
                                 <shadedPattern>spectrasonic.acf</shadedPattern>
@@ -123,7 +152,7 @@
                                 <pattern>co.aikar.locales</pattern>
                                 <shadedPattern>spectrasonic.locales</shadedPattern>
                             </relocation>
-                        </relocations>
+                        </relocations> -->
                         <shadedArtifactAttached>true</shadedArtifactAttached>
                     </configuration>
                     <executions>

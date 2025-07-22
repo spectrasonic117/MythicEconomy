@@ -3,3 +3,47 @@ version: '${version}'
 main: com.spectrasonic.MangoEconomy.Main
 api-version: '1.21'
 authors: [Spectrasonic]
+description: "Sistema de economía completo para servidores de Minecraft"
+website: https://github.com/spectrasonic
+depend: ["Vault", "PlaceholderAPI"]
+
+
+commands:
+  economy:
+    permission: mangoeconomy.economy.admin
+    aliases: [eco, econ]
+  
+  money:
+    permission: mangoeconomy.money
+    aliases: [balance, bal]
+  
+  pay:
+    permission: mangoeconomy.pay
+    aliases: [send]
+
+permissions:
+  mangoeconomy.*:
+    description: "Acceso completo a MangoEconomy"
+    default: op
+    children:
+      mangoeconomy.economy.admin:
+        default: op
+      mangoeconomy.money:
+        default: true
+      mangoeconomy.pay:
+        default: true
+  
+  mangoeconomy.economy.admin:
+    description: "Permite usar todos los comandos de administración"
+    default: op
+    children:
+      mangoeconomy.economy.give:
+        default: op
+      mangoeconomy.economy.take:
+        default: op
+      mangoeconomy.economy.set:
+        default: op
+      mangoeconomy.economy.balance.others:
+        default: op
+      mangoeconomy.economy.reload:
+        default: op

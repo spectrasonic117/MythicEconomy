@@ -1,0 +1,63 @@
+# Permisos para MangoEconomy Plugin
+
+# Permisos de administración
+mangoeconomy.economy.admin:
+  description: "Permite usar todos los comandos de administración de economía"
+  default: op
+  children:
+    - mangoeconomy.economy.give
+    - mangoeconomy.economy.take
+    - mangoeconomy.economy.set
+    - mangoeconomy.economy.balance.others
+    - mangoeconomy.economy.reload
+
+mangoeconomy.economy.give:
+  description: "Permite dar dinero a otros jugadores"
+  default: op
+
+mangoeconomy.economy.take:
+  description: "Permite quitar dinero a otros jugadores"
+  default: op
+
+mangoeconomy.economy.set:
+  description: "Permite establecer el saldo de otros jugadores"
+  default: op
+
+mangoeconomy.economy.balance.others:
+  description: "Permite ver el saldo de otros jugadores"
+  default: op
+
+mangoeconomy.economy.reload:
+  description: "Permite recargar los datos de economía"
+  default: op
+
+# Permisos de jugadores
+mangoeconomy.money:
+  description: "Permite ver tu propio saldo"
+  default: true
+
+mangoeconomy.pay:
+  description: "Permite enviar dinero a otros jugadores"
+  default: true
+
+# Permisos grupales
+mangoeconomy.user:
+  description: "Permisos básicos para usuarios"
+  default: true
+  children:
+    - mangoeconomy.money
+    - mangoeconomy.pay
+
+mangoeconomy.moderator:
+  description: "Permisos para moderadores"
+  default: false
+  children:
+    - mangoeconomy.user
+    - mangoeconomy.economy.balance.others
+
+mangoeconomy.admin:
+  description: "Permisos completos de administración"
+  default: op
+  children:
+    - mangoeconomy.moderator
+    - mangoeconomy.economy.admin

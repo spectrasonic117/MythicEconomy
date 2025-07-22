@@ -1,0 +1,52 @@
+# Configuración de MangoEconomy
+
+# Configuración de economía
+economy:
+  # Saldo inicial para nuevos jugadores
+  starting-balance: 100.0
+  
+  # Formato de moneda
+  currency:
+    symbol: "$"
+    name: "monedas"
+    name-singular: "moneda"
+    
+  # Límites
+  limits:
+    max-balance: 999999999.99
+    min-transfer: 0.01
+    max-transfer: 100000.0
+
+# Configuración de mensajes
+messages:
+  # Prefijo para todos los mensajes
+  prefix: "<gray>[<gold>MangoEconomy</gold>]</gray> <gold>»</gold> "
+  
+  # Mensajes de economía
+  economy:
+    insufficient-funds: "<red>No tienes suficiente dinero."
+    invalid-amount: "<red>Cantidad inválida."
+    player-not-found: "<red>Jugador no encontrado."
+    self-transfer: "<red>No puedes enviarte dinero a ti mismo."
+    
+  # Mensajes de éxito
+  success:
+    money-given: "<green>Se han dado <yellow>{amount}</yellow> {currency} a <aqua>{player}</aqua>."
+    money-taken: "<green>Se han quitado <yellow>{amount}</yellow> {currency} a <aqua>{player}</aqua>."
+    money-set: "<green>El saldo de <aqua>{player}</aqua> ha sido establecido a <yellow>{amount}</yellow> {currency}."
+    money-sent: "<green>Has enviado <yellow>{amount}</yellow> {currency} a <aqua>{player}</aqua>."
+    money-received: "<green>Has recibido <yellow>{amount}</yellow> {currency} de <aqua>{player}</aqua>."
+
+# Configuración de base de datos
+database:
+  # Tipo de almacenamiento: FILE o MYSQL
+  type: "FILE"
+  
+  # Configuración para MySQL (si se usa)
+  mysql:
+    host: "localhost"
+    port: 3306
+    database: "mangoeconomy"
+    username: "root"
+    password: ""
+    table-prefix: "mango_"
