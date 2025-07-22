@@ -4,8 +4,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.Bukkit;
 
 import com.spectrasonic.Utils.MessageUtils;
+import com.spectrasonic.MangoEconomy.api.events.MoneyAddEvent;
+import com.spectrasonic.MangoEconomy.api.events.MoneyRemoveEvent;
 
 import java.io.File;
 import java.io.IOException;
@@ -115,7 +118,17 @@ public class EconomyManager {
             return false;
         }
         double currentBalance = getBalance(player);
-        setBalance(player, currentBalance + amount);
+        double newBalance = currentBalance + amount;
+        
+        // Disparar evento
+        MoneyAddEvent event = new MoneyAddEvent(player, amount, currentBalance, newBalance);
+        Bukkit.getPluginManager().callEvent(event);
+        
+        if (event.isCancelled()) {
+            return false;
+        }
+        
+        setBalance(player, newBalance);
         return true;
     }
     
@@ -127,7 +140,17 @@ public class EconomyManager {
         if (currentBalance < amount) {
             return false;
         }
-        setBalance(player, currentBalance - amount);
+        double newBalance = currentBalance - amount;
+        
+        // Disparar evento
+        MoneyRemoveEvent event = new MoneyRemoveEvent(player, amount, currentBalance, newBalance);
+        Bukkit.getPluginManager().callEvent(event);
+        
+        if (event.isCancelled()) {
+            return false;
+        }
+        
+        setBalance(player, newBalance);
         return true;
     }
     

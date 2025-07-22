@@ -3,9 +3,13 @@ version: '${version}'
 main: com.spectrasonic.MangoEconomy.Main
 api-version: '1.21'
 authors: [Spectrasonic]
-description: "Sistema de economía completo para servidores de Minecraft"
+description: "Sistema de economía completo para servidores de Minecraft con API para desarrolladores"
 website: https://github.com/spectrasonic
 depend: ["Vault", "PlaceholderAPI"]
+
+# API Information for other plugins
+provides:
+  - MangoEconomyAPI
 
 
 commands:
