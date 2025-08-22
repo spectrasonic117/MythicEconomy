@@ -1,11 +1,11 @@
-# MangoEconomy Plugin
+# MythicEconomy Plugin
 
 Un sistema de economía completo y moderno para servidores de Minecraft usando CommandAPI y MiniMessage.
 
 ## 🚀 Características
 
 - **Sistema de economía completamente independiente** - No requiere otros plugins
-- **Compatibilidad con Vault API** - Otros plugins pueden usar MangoEconomy
+- **Compatibilidad con Vault API** - Otros plugins pueden usar MythicEconomy
 - **Comandos intuitivos** usando CommandAPI
 - **Mensajes coloridos** con soporte MiniMessage
 - **Sistema de permisos granular**
@@ -22,7 +22,7 @@ Un sistema de economía completo y moderno para servidores de Minecraft usando C
 #### `/economy` (Aliases: `/eco`, `/econ`)
 Comando principal de administración de economía.
 
-**Permisos:** `mangoeconomy.economy.admin`
+**Permisos:** `MythicEconomy.economy.admin`
 
 **Subcomandos:**
 - `/economy give <jugador> <cantidad>` - Dar dinero a un jugador
@@ -39,27 +39,27 @@ Comando principal de administración de economía.
 #### `/money` (Aliases: `/balance`, `/bal`)
 Ver tu saldo actual.
 
-**Permisos:** `mangoeconomy.money`
+**Permisos:** `MythicEconomy.money`
 
 #### `/pay <jugador> <cantidad>` (Alias: `/send`)
 Enviar dinero a otro jugador.
 
-**Permisos:** `mangoeconomy.pay`
+**Permisos:** `MythicEconomy.pay`
 
 ## 🔐 Permisos
 
 ### Permisos de Administración
-- `mangoeconomy.*` - Acceso completo al plugin
-- `mangoeconomy.economy.admin` - Acceso a todos los comandos de administración
-- `mangoeconomy.economy.give` - Dar dinero a jugadores
-- `mangoeconomy.economy.take` - Quitar dinero a jugadores
-- `mangoeconomy.economy.set` - Establecer saldo de jugadores
-- `mangoeconomy.economy.balance.others` - Ver saldo de otros jugadores
-- `mangoeconomy.economy.reload` - Recargar configuración
+- `MythicEconomy.*` - Acceso completo al plugin
+- `MythicEconomy.economy.admin` - Acceso a todos los comandos de administración
+- `MythicEconomy.economy.give` - Dar dinero a jugadores
+- `MythicEconomy.economy.take` - Quitar dinero a jugadores
+- `MythicEconomy.economy.set` - Establecer saldo de jugadores
+- `MythicEconomy.economy.balance.others` - Ver saldo de otros jugadores
+- `MythicEconomy.economy.reload` - Recargar configuración
 
 ### Permisos de Jugadores
-- `mangoeconomy.money` - Ver tu propio saldo (default: true)
-- `mangoeconomy.pay` - Enviar dinero a otros jugadores (default: true)
+- `MythicEconomy.money` - Ver tu propio saldo (default: true)
+- `MythicEconomy.pay` - Enviar dinero a otros jugadores (default: true)
 
 ## ⚙️ Configuración
 
@@ -81,7 +81,7 @@ economy:
 ## 📁 Estructura de Archivos
 
 ```
-plugins/MangoEconomy/
+plugins/MythicEconomy/
 ├── config.yml          # Configuración principal
 └── playerdata.yml       # Datos de saldos de jugadores
 ```
@@ -96,7 +96,7 @@ plugins/MangoEconomy/
    - Vault (para compatibilidad con otros plugins)
 
 2. **Instalación:**
-   - Descarga el archivo `MangoEconomy-1.0.0.jar`
+   - Descarga el archivo `MythicEconomy-1.0.0.jar`
    - Colócalo en la carpeta `plugins/` de tu servidor
    - Reinicia el servidor
 
@@ -136,7 +136,7 @@ El plugin utiliza MiniMessage para mensajes coloridos y atractivos:
 
 ## 🔄 API para Desarrolladores
 
-### **API Nativa de MangoEconomy**
+### **API Nativa de MythicEconomy**
 ```java
 // Obtener el manager de economía
 EconomyManager economyManager = EconomyManager.getInstance();

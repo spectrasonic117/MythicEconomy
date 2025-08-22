@@ -1,29 +1,29 @@
-package com.spectrasonic.MangoEconomy.api.events;
+package com.spectrasonic.MythicEconomy.api.events;
 
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
 /**
- * Evento base para todos los eventos de economía de MangoEconomy
+ * Evento base para todos los eventos de economía de MythicEconomy
  * 
  * @author Spectrasonic
  * @version 1.1.0
  */
 public abstract class EconomyEvent extends Event {
-    
+
     private static final HandlerList handlers = new HandlerList();
-    
+
     protected final Player player;
     protected final double amount;
     protected final double oldBalance;
     protected final double newBalance;
-    
+
     /**
      * Constructor del evento de economía
      * 
-     * @param player El jugador involucrado en la transacción
-     * @param amount La cantidad de la transacción
+     * @param player     El jugador involucrado en la transacción
+     * @param amount     La cantidad de la transacción
      * @param oldBalance El balance anterior del jugador
      * @param newBalance El nuevo balance del jugador
      */
@@ -33,7 +33,7 @@ public abstract class EconomyEvent extends Event {
         this.oldBalance = oldBalance;
         this.newBalance = newBalance;
     }
-    
+
     /**
      * Obtiene el jugador involucrado en la transacción
      * 
@@ -42,7 +42,7 @@ public abstract class EconomyEvent extends Event {
     public Player getPlayer() {
         return player;
     }
-    
+
     /**
      * Obtiene la cantidad de la transacción
      * 
@@ -51,7 +51,7 @@ public abstract class EconomyEvent extends Event {
     public double getAmount() {
         return amount;
     }
-    
+
     /**
      * Obtiene el balance anterior del jugador
      * 
@@ -60,7 +60,7 @@ public abstract class EconomyEvent extends Event {
     public double getOldBalance() {
         return oldBalance;
     }
-    
+
     /**
      * Obtiene el nuevo balance del jugador
      * 
@@ -69,12 +69,12 @@ public abstract class EconomyEvent extends Event {
     public double getNewBalance() {
         return newBalance;
     }
-    
+
     @Override
     public HandlerList getHandlers() {
         return handlers;
     }
-    
+
     public static HandlerList getHandlerList() {
         return handlers;
     }

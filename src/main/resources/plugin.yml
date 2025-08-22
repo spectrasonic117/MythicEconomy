@@ -1,6 +1,6 @@
-name: MangoEconomy
+name: MythicEconomy
 version: '${version}'
-main: com.spectrasonic.MangoEconomy.Main
+main: com.spectrasonic.MythicEconomy.Main
 api-version: '1.21'
 authors: [Spectrasonic]
 description: "Sistema de economía completo para servidores de Minecraft con API para desarrolladores"
@@ -9,45 +9,45 @@ depend: ["Vault", "PlaceholderAPI"]
 
 # API Information for other plugins
 provides:
-  - MangoEconomyAPI
+  - MythicEconomyAPI
 
 
 commands:
   economy:
-    permission: mangoeconomy.economy.admin
+    permission: MythicEconomy.economy.admin
     aliases: [eco, econ]
   
   money:
-    permission: mangoeconomy.money
+    permission: MythicEconomy.money
     aliases: [balance, bal]
   
   pay:
-    permission: mangoeconomy.pay
+    permission: MythicEconomy.pay
     aliases: [send]
 
 permissions:
-  mangoeconomy.*:
-    description: "Acceso completo a MangoEconomy"
+  MythicEconomy.*:
+    description: "Acceso completo a MythicEconomy"
     default: op
     children:
-      mangoeconomy.economy.admin:
+      MythicEconomy.economy.admin:
         default: op
-      mangoeconomy.money:
+      MythicEconomy.money:
         default: true
-      mangoeconomy.pay:
+      MythicEconomy.pay:
         default: true
   
-  mangoeconomy.economy.admin:
+  MythicEconomy.economy.admin:
     description: "Permite usar todos los comandos de administración"
     default: op
     children:
-      mangoeconomy.economy.give:
+      MythicEconomy.economy.give:
         default: op
-      mangoeconomy.economy.take:
+      MythicEconomy.economy.take:
         default: op
-      mangoeconomy.economy.set:
+      MythicEconomy.economy.set:
         default: op
-      mangoeconomy.economy.balance.others:
+      MythicEconomy.economy.balance.others:
         default: op
-      mangoeconomy.economy.reload:
+      MythicEconomy.economy.reload:
         default: op

@@ -1,33 +1,33 @@
-# MangoEconomy API - Documentación para Desarrolladores
+# MythicEconomy API - Documentación para Desarrolladores
 
 ## Introducción
 
-MangoEconomy proporciona una API simple y fácil de usar para que otros plugins puedan interactuar con el sistema de economía. Esta API permite agregar, quitar, transferir y consultar dinero de los jugadores de forma segura y eficiente.
+MythicEconomy proporciona una API simple y fácil de usar para que otros plugins puedan interactuar con el sistema de economía. Esta API permite agregar, quitar, transferir y consultar dinero de los jugadores de forma segura y eficiente.
 
 ## Instalación y Configuración
 
 ### 1. Dependencia en tu plugin
 
-Agrega MangoEconomy como dependencia en tu `plugin.yml`:
+Agrega MythicEconomy como dependencia en tu `plugin.yml`:
 
 ```yaml
-depend: [MangoEconomy]
+depend: [MythicEconomy]
 # o si es opcional:
-softdepend: [MangoEconomy]
+softdepend: [MythicEconomy]
 ```
 
 ### 2. Dependencia Local (Maven)
 
-Para incluir MangoEconomy como dependencia local desde tu carpeta `lib`, agrega esto a tu `pom.xml`:
+Para incluir MythicEconomy como dependencia local desde tu carpeta `lib`, agrega esto a tu `pom.xml`:
 
 ```xml
-<!-- Dependencia local de MangoEconomy -->
+<!-- Dependencia local de MythicEconomy -->
 <dependency>
     <groupId>com.spectrasonic</groupId>
-    <artifactId>MangoEconomy</artifactId>
+    <artifactId>MythicEconomy</artifactId>
     <version>1.1.0</version>
     <scope>system</scope>
-    <systemPath>${project.basedir}/lib/MangoEconomy-*</systemPath>
+    <systemPath>${project.basedir}/lib/MythicEconomy-*</systemPath>
 </dependency>
 ```
 
@@ -35,7 +35,7 @@ Para incluir MangoEconomy como dependencia local desde tu carpeta `lib`, agrega 
 ```
 MiPlugin/
 ├── lib/
-│   └── MangoEconomy-1.1.0.jar    # Coloca el JAR aquí
+│   └── MythicEconomy-1.1.0.jar    # Coloca el JAR aquí
 ├── src/main/java/
 ├── pom.xml
 └── ...
@@ -47,7 +47,7 @@ Si usas Gradle, agrega esto a tu `build.gradle`:
 
 ```gradle
 dependencies {
-    compileOnly files('lib/MangoEconomy-1.1.0.jar')
+    compileOnly files('lib/MythicEconomy-1.1.0.jar')
     // otras dependencias...
 }
 ```
@@ -57,24 +57,24 @@ dependencies {
 ### Obtener la instancia de la API
 
 ```java
-import com.spectrasonic.MangoEconomy.api.MangoEconomyAPI;
+import com.spectrasonic.MythicEconomy.api.MythicEconomyAPI;
 
 public class MiPlugin extends JavaPlugin {
     
-    private MangoEconomyAPI economyAPI;
+    private MythicEconomyAPI economyAPI;
     
     @Override
     public void onEnable() {
-        // Verificar si MangoEconomy está disponible
-        if (!MangoEconomyAPI.isAvailable()) {
-            getLogger().severe("MangoEconomy no está disponible!");
+        // Verificar si MythicEconomy está disponible
+        if (!MythicEconomyAPI.isAvailable()) {
+            getLogger().severe("MythicEconomy no está disponible!");
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
         
         // Obtener la instancia de la API
-        this.economyAPI = MangoEconomyAPI.getInstance();
-        getLogger().info("MangoEconomy API cargada correctamente!");
+        this.economyAPI = MythicEconomyAPI.getInstance();
+        getLogger().info("MythicEconomy API cargada correctamente!");
     }
 }
 ```
@@ -219,12 +219,12 @@ getLogger().info("Cuentas totales: " + totalAccounts);
 
 ## Eventos de la API
 
-MangoEconomy dispara eventos personalizados que puedes escuchar en tu plugin:
+MythicEconomy dispara eventos personalizados que puedes escuchar en tu plugin:
 
 ### 1. Evento de Agregar Dinero
 
 ```java
-import com.spectrasonic.MangoEconomy.api.events.MoneyAddEvent;
+import com.spectrasonic.MythicEconomy.api.events.MoneyAddEvent;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
@@ -249,7 +249,7 @@ public class EconomyListener implements Listener {
 ### 2. Evento de Quitar Dinero
 
 ```java
-import com.spectrasonic.MangoEconomy.api.events.MoneyRemoveEvent;
+import com.spectrasonic.MythicEconomy.api.events.MoneyRemoveEvent;
 
 @EventHandler
 public void onMoneyRemove(MoneyRemoveEvent event) {
@@ -264,7 +264,7 @@ public void onMoneyRemove(MoneyRemoveEvent event) {
 ### 3. Evento de Transferencia
 
 ```java
-import com.spectrasonic.MangoEconomy.api.events.MoneyTransferEvent;
+import com.spectrasonic.MythicEconomy.api.events.MoneyTransferEvent;
 
 @EventHandler
 public void onMoneyTransfer(MoneyTransferEvent event) {
@@ -287,10 +287,10 @@ public void onMoneyTransfer(MoneyTransferEvent event) {
 ```java
 public class TiendaSimple implements Listener {
     
-    private MangoEconomyAPI economyAPI;
+    private MythicEconomyAPI economyAPI;
     
     public TiendaSimple() {
-        this.economyAPI = MangoEconomyAPI.getInstance();
+        this.economyAPI = MythicEconomyAPI.getInstance();
     }
     
     @EventHandler
@@ -322,10 +322,10 @@ public class TiendaSimple implements Listener {
 ```java
 public class SistemaRecompensas implements Listener {
     
-    private MangoEconomyAPI economyAPI;
+    private MythicEconomyAPI economyAPI;
     
     public SistemaRecompensas() {
-        this.economyAPI = MangoEconomyAPI.getInstance();
+        this.economyAPI = MythicEconomyAPI.getInstance();
     }
     
     @EventHandler
@@ -357,11 +357,11 @@ public class SistemaRecompensas implements Listener {
 
 ### 1. Verificar disponibilidad
 
-Siempre verifica que MangoEconomy esté disponible antes de usar la API:
+Siempre verifica que MythicEconomy esté disponible antes de usar la API:
 
 ```java
-if (!MangoEconomyAPI.isAvailable()) {
-    // Manejar el caso donde MangoEconomy no está disponible
+if (!MythicEconomyAPI.isAvailable()) {
+    // Manejar el caso donde MythicEconomy no está disponible
     return;
 }
 ```
@@ -406,6 +406,6 @@ player.sendMessage("Balance: $" + balance);
 - **Autor**: Spectrasonic
 - **Versión**: 1.1.0
 - **GitHub**: https://github.com/spectrasonic
-- **Plugin**: MangoEconomy
+- **Plugin**: MythicEconomy
 
 Para reportar bugs o solicitar características, contacta al desarrollador o crea un issue en el repositorio del proyecto.

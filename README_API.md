@@ -1,8 +1,8 @@
-# MangoEconomy API
+# MythicEconomy API
 
 ## Resumen
 
-MangoEconomy ahora incluye una **API completa y fácil de usar** que permite a otros plugins interactuar con el sistema de economía de forma segura y eficiente.
+MythicEconomy ahora incluye una **API completa y fácil de usar** que permite a otros plugins interactuar con el sistema de economía de forma segura y eficiente.
 
 ## Características de la API
 
@@ -25,8 +25,8 @@ MangoEconomy ahora incluye una **API completa y fácil de usar** que permite a o
 
 ### 📁 **Packages de la API**
 ```
-src/main/java/com/spectrasonic/MangoEconomy/api/
-├── MangoEconomyAPI.java           # Clase principal de la API
+src/main/java/com/spectrasonic/MythicEconomy/api/
+├── MythicEconomyAPI.java           # Clase principal de la API
 └── events/
     ├── EconomyEvent.java          # Evento base
     ├── MoneyAddEvent.java         # Evento de agregar dinero
@@ -44,8 +44,8 @@ src/main/java/com/spectrasonic/MangoEconomy/api/
 ### 1. **Obtener la API**
 ```java
 // Verificar disponibilidad
-if (MangoEconomyAPI.isAvailable()) {
-    MangoEconomyAPI api = MangoEconomyAPI.getInstance();
+if (MythicEconomyAPI.isAvailable()) {
+    MythicEconomyAPI api = MythicEconomyAPI.getInstance();
 }
 ```
 
@@ -85,7 +85,7 @@ public void onMoneyAdd(MoneyAddEvent event) {
 ## Ventajas para Desarrolladores
 
 ### 🚀 **Simplicidad**
-- Una sola clase principal (`MangoEconomyAPI`)
+- Una sola clase principal (`MythicEconomyAPI`)
 - Métodos intuitivos y bien documentados
 - Manejo automático de errores
 
@@ -108,21 +108,21 @@ public void onMoneyAdd(MoneyAddEvent event) {
 
 ### **plugin.yml**
 ```yaml
-depend: [MangoEconomy]
+depend: [MythicEconomy]
 # o para dependencia opcional:
-softdepend: [MangoEconomy]
+softdepend: [MythicEconomy]
 ```
 
 ### **Clase Principal**
 ```java
 public class MiPlugin extends JavaPlugin {
-    private MangoEconomyAPI economyAPI;
+    private MythicEconomyAPI economyAPI;
     
     @Override
     public void onEnable() {
-        if (MangoEconomyAPI.isAvailable()) {
-            this.economyAPI = MangoEconomyAPI.getInstance();
-            getLogger().info("MangoEconomy API cargada!");
+        if (MythicEconomyAPI.isAvailable()) {
+            this.economyAPI = MythicEconomyAPI.getInstance();
+            getLogger().info("MythicEconomy API cargada!");
         }
     }
 }
@@ -153,4 +153,4 @@ Para obtener ayuda con la API:
 
 ---
 
-**¡La API de MangoEconomy hace que integrar un sistema de economía en tu plugin sea súper fácil!** 🎉
+**¡La API de MythicEconomy hace que integrar un sistema de economía en tu plugin sea súper fácil!** 🎉

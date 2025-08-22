@@ -1,4 +1,4 @@
-# Configuración de MangoEconomy
+# Configuración de MythicEconomy
 
 # Configuración de economía
 economy:
@@ -20,7 +20,7 @@ economy:
 # Configuración de mensajes
 messages:
   # Prefijo para todos los mensajes
-  prefix: "<gray>[<gold>MangoEconomy</gold>]</gray> <gold>»</gold> "
+  prefix: "<gray>[<gold>MythicEconomy</gold>]</gray> <gold>»</gold> "
   
   # Mensajes de economía
   economy:
@@ -46,7 +46,7 @@ database:
   mysql:
     host: "localhost"
     port: 3306
-    database: "mangoeconomy"
+    database: "MythicEconomy"
     username: "root"
     password: ""
     table-prefix: "mango_"

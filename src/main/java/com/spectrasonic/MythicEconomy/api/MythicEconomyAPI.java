@@ -1,49 +1,50 @@
-package com.spectrasonic.MangoEconomy.api;
+package com.spectrasonic.MythicEconomy.api;
 
-import com.spectrasonic.MangoEconomy.manager.EconomyManager;
+import com.spectrasonic.MythicEconomy.manager.EconomyManager;
 import org.bukkit.entity.Player;
 
 /**
- * API principal de MangoEconomy para uso en otros plugins
+ * API principal de MythicEconomy para uso en otros plugins
  * 
  * Esta clase proporciona métodos simples y fáciles de usar para interactuar
- * con el sistema de economía de MangoEconomy desde otros plugins.
+ * con el sistema de economía de MythicEconomy desde otros plugins.
  * 
  * @author Spectrasonic
  * @version 1.1.0
  */
-public class MangoEconomyAPI {
-    
-    private static MangoEconomyAPI instance;
+public class MythicEconomyAPI {
+
+    private static MythicEconomyAPI instance;
     private final EconomyManager economyManager;
-    
+
     /**
      * Constructor interno - usar getInstance() para obtener la instancia
      */
-    private MangoEconomyAPI() {
+    private MythicEconomyAPI() {
         this.economyManager = EconomyManager.getInstance();
         if (this.economyManager == null) {
-            throw new IllegalStateException("MangoEconomy no está inicializado. Asegúrate de que el plugin esté cargado.");
+            throw new IllegalStateException(
+                    "MythicEconomy no está inicializado. Asegúrate de que el plugin esté cargado.");
         }
     }
-    
+
     /**
      * Obtiene la instancia singleton de la API
      * 
-     * @return Instancia de MangoEconomyAPI
-     * @throws IllegalStateException si MangoEconomy no está inicializado
+     * @return Instancia de MythicEconomyAPI
+     * @throws IllegalStateException si MythicEconomy no está inicializado
      */
-    public static MangoEconomyAPI getInstance() {
+    public static MythicEconomyAPI getInstance() {
         if (instance == null) {
-            instance = new MangoEconomyAPI();
+            instance = new MythicEconomyAPI();
         }
         return instance;
     }
-    
+
     /**
-     * Verifica si MangoEconomy está disponible
+     * Verifica si MythicEconomy está disponible
      * 
-     * @return true si MangoEconomy está disponible, false en caso contrario
+     * @return true si MythicEconomy está disponible, false en caso contrario
      */
     public static boolean isAvailable() {
         try {
@@ -52,9 +53,9 @@ public class MangoEconomyAPI {
             return false;
         }
     }
-    
+
     // ========== MÉTODOS DE BALANCE ==========
-    
+
     /**
      * Obtiene el balance de un jugador
      * 
@@ -64,7 +65,7 @@ public class MangoEconomyAPI {
     public double getBalance(Player player) {
         return economyManager.getBalance(player);
     }
-    
+
     /**
      * Establece el balance de un jugador
      * 
@@ -79,9 +80,9 @@ public class MangoEconomyAPI {
         economyManager.setBalance(player, amount);
         return true;
     }
-    
+
     // ========== MÉTODOS DE AGREGAR DINERO ==========
-    
+
     /**
      * Agrega dinero al balance de un jugador
      * 
@@ -92,64 +93,66 @@ public class MangoEconomyAPI {
     public boolean addMoney(Player player, double amount) {
         return economyManager.addMoney(player, amount);
     }
-    
+
     /**
      * Agrega dinero al balance de un jugador con validación adicional
      * 
-     * @param player El jugador
-     * @param amount La cantidad a agregar
-     * @param allowNegative Si se permite agregar cantidades negativas (equivale a quitar)
+     * @param player        El jugador
+     * @param amount        La cantidad a agregar
+     * @param allowNegative Si se permite agregar cantidades negativas (equivale a
+     *                      quitar)
      * @return true si la operación fue exitosa
      */
     public boolean addMoney(Player player, double amount, boolean allowNegative) {
         if (!allowNegative && amount < 0) {
             return false;
         }
-        
+
         if (amount < 0) {
             return removeMoney(player, Math.abs(amount));
         }
-        
+
         return economyManager.addMoney(player, amount);
     }
-    
+
     // ========== MÉTODOS DE QUITAR DINERO ==========
-    
+
     /**
      * Quita dinero del balance de un jugador
      * 
      * @param player El jugador
      * @param amount La cantidad a quitar (debe ser positiva)
-     * @return true si la operación fue exitosa, false si no tiene suficiente dinero o la cantidad es inválida
+     * @return true si la operación fue exitosa, false si no tiene suficiente dinero
+     *         o la cantidad es inválida
      */
     public boolean removeMoney(Player player, double amount) {
         return economyManager.removeMoney(player, amount);
     }
-    
+
     /**
      * Quita dinero del balance de un jugador con opción de forzar
      * 
      * @param player El jugador
      * @param amount La cantidad a quitar
-     * @param force Si es true, permite que el balance quede negativo
+     * @param force  Si es true, permite que el balance quede negativo
      * @return true si la operación fue exitosa
      */
     public boolean removeMoney(Player player, double amount, boolean force) {
         if (amount <= 0) {
             return false;
         }
-        
+
         if (force) {
             double currentBalance = getBalance(player);
             setBalance(player, currentBalance - amount);
             return true;
         }
-        
+
         return economyManager.removeMoney(player, amount);
     }
-    
+
     // ========== MÉTODOS DE VERIFICACIÓN ==========
-    
+
     /**
      * Verifica si un jugador tiene suficiente dinero
      * 
@@ -160,7 +163,7 @@ public class MangoEconomyAPI {
     public boolean hasEnoughMoney(Player player, double amount) {
         return economyManager.hasEnoughMoney(player, amount);
     }
-    
+
     /**
      * Verifica si un jugador puede pagar una cantidad específica
      * Alias de hasEnoughMoney para mayor claridad
@@ -172,14 +175,14 @@ public class MangoEconomyAPI {
     public boolean canPay(Player player, double amount) {
         return hasEnoughMoney(player, amount);
     }
-    
+
     // ========== MÉTODOS DE TRANSFERENCIA ==========
-    
+
     /**
      * Transfiere dinero de un jugador a otro
      * 
-     * @param from El jugador que envía el dinero
-     * @param to El jugador que recibe el dinero
+     * @param from   El jugador que envía el dinero
+     * @param to     El jugador que recibe el dinero
      * @param amount La cantidad a transferir
      * @return true si la transferencia fue exitosa
      */
@@ -187,20 +190,20 @@ public class MangoEconomyAPI {
         if (amount <= 0) {
             return false;
         }
-        
+
         if (!hasEnoughMoney(from, amount)) {
             return false;
         }
-        
+
         if (removeMoney(from, amount)) {
             return addMoney(to, amount);
         }
-        
+
         return false;
     }
-    
+
     // ========== MÉTODOS DE FORMATO ==========
-    
+
     /**
      * Formatea una cantidad de dinero con el símbolo de moneda
      * 
@@ -210,7 +213,7 @@ public class MangoEconomyAPI {
     public String formatMoney(double amount) {
         return economyManager.formatMoney(amount);
     }
-    
+
     /**
      * Obtiene el símbolo de la moneda configurado
      * 
@@ -219,7 +222,7 @@ public class MangoEconomyAPI {
     public String getCurrencySymbol() {
         return economyManager.getCurrencySymbol();
     }
-    
+
     /**
      * Obtiene el nombre de la moneda (plural)
      * 
@@ -228,7 +231,7 @@ public class MangoEconomyAPI {
     public String getCurrencyName() {
         return economyManager.getCurrencyName();
     }
-    
+
     /**
      * Obtiene el nombre de la moneda (singular)
      * 
@@ -237,9 +240,9 @@ public class MangoEconomyAPI {
     public String getCurrencyNameSingular() {
         return economyManager.getCurrencyNameSingular();
     }
-    
+
     // ========== MÉTODOS DE CONFIGURACIÓN ==========
-    
+
     /**
      * Obtiene el balance inicial para nuevos jugadores
      * 
@@ -248,9 +251,9 @@ public class MangoEconomyAPI {
     public double getStartingBalance() {
         return economyManager.getStartingBalance();
     }
-    
+
     // ========== MÉTODOS DE ESTADÍSTICAS ==========
-    
+
     /**
      * Obtiene el total de dinero en circulación en el servidor
      * 
@@ -259,7 +262,7 @@ public class MangoEconomyAPI {
     public double getTotalMoney() {
         return economyManager.getTotalMoney();
     }
-    
+
     /**
      * Obtiene el número total de cuentas de jugadores
      * 

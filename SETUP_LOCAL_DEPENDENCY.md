@@ -1,13 +1,13 @@
-# Configuración de Dependencia Local - MangoEconomy API
+# Configuración de Dependencia Local - MythicEconomy API
 
-Esta guía te muestra cómo configurar MangoEconomy como dependencia local en tu proyecto.
+Esta guía te muestra cómo configurar MythicEconomy como dependencia local en tu proyecto.
 
 ## 📁 Estructura del Proyecto
 
 ```
 TuPlugin/
 ├── lib/
-│   └── MangoEconomy-1.1.0.jar     # JAR de MangoEconomy aquí
+│   └── MythicEconomy-1.1.0.jar     # JAR de MythicEconomy aquí
 ├── src/main/java/
 │   └── com/tupackage/tuplugin/
 ├── src/main/resources/
@@ -24,12 +24,12 @@ TuPlugin/
 mkdir lib
 ```
 
-### 2. Copiar JAR de MangoEconomy
+### 2. Copiar JAR de MythicEconomy
 
-Coloca el archivo `MangoEconomy-1.1.0.jar` en la carpeta `lib/`:
+Coloca el archivo `MythicEconomy-1.1.0.jar` en la carpeta `lib/`:
 
 ```bash
-cp MangoEconomy-1.1.0.jar lib/
+cp MythicEconomy-1.1.0.jar lib/
 ```
 
 ### 3. Configurar pom.xml
@@ -46,13 +46,13 @@ Agrega esta dependencia a tu `pom.xml`:
         <scope>provided</scope>
     </dependency>
     
-    <!-- MangoEconomy API (dependencia local) -->
+    <!-- MythicEconomy API (dependencia local) -->
     <dependency>
         <groupId>com.spectrasonic</groupId>
-        <artifactId>MangoEconomy</artifactId>
+        <artifactId>MythicEconomy</artifactId>
         <version>1.1.0</version>
         <scope>system</scope>
-        <systemPath>${project.basedir}/lib/MangoEconomy-1.1.0.jar</systemPath>
+        <systemPath>${project.basedir}/lib/MythicEconomy-1.1.0.jar</systemPath>
     </dependency>
 </dependencies>
 ```
@@ -64,9 +64,9 @@ name: TuPlugin
 version: 1.0.0
 main: com.tupackage.tuplugin.TuPlugin
 api-version: '1.21'
-depend: [MangoEconomy]  # Dependencia obligatoria
+depend: [MythicEconomy]  # Dependencia obligatoria
 # o
-softdepend: [MangoEconomy]  # Dependencia opcional
+softdepend: [MythicEconomy]  # Dependencia opcional
 ```
 
 ## 🔧 Configuración Gradle
@@ -90,8 +90,8 @@ dependencies {
     // Paper API
     compileOnly 'io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT'
     
-    // MangoEconomy API (dependencia local)
-    compileOnly files('lib/MangoEconomy-1.1.0.jar')
+    // MythicEconomy API (dependencia local)
+    compileOnly files('lib/MythicEconomy-1.1.0.jar')
 }
 
 java {
@@ -104,8 +104,8 @@ java {
 ### Importar la API
 
 ```java
-import com.spectrasonic.MangoEconomy.api.MangoEconomyAPI;
-import com.spectrasonic.MangoEconomy.api.events.MoneyAddEvent;
+import com.spectrasonic.MythicEconomy.api.MythicEconomyAPI;
+import com.spectrasonic.MythicEconomy.api.events.MoneyAddEvent;
 ```
 
 ### Verificar disponibilidad
@@ -113,20 +113,20 @@ import com.spectrasonic.MangoEconomy.api.events.MoneyAddEvent;
 ```java
 public class TuPlugin extends JavaPlugin {
     
-    private MangoEconomyAPI economyAPI;
+    private MythicEconomyAPI economyAPI;
     
     @Override
     public void onEnable() {
-        // Verificar si MangoEconomy está disponible
-        if (!MangoEconomyAPI.isAvailable()) {
-            getLogger().severe("MangoEconomy no está disponible!");
+        // Verificar si MythicEconomy está disponible
+        if (!MythicEconomyAPI.isAvailable()) {
+            getLogger().severe("MythicEconomy no está disponible!");
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
         
         // Obtener la API
-        this.economyAPI = MangoEconomyAPI.getInstance();
-        getLogger().info("MangoEconomy API cargada correctamente!");
+        this.economyAPI = MythicEconomyAPI.getInstance();
+        getLogger().info("MythicEconomy API cargada correctamente!");
     }
 }
 ```
@@ -160,14 +160,14 @@ mvn clean package
 
 1. Compila tu plugin
 2. Copia el JAR a la carpeta `plugins/` de tu servidor de pruebas
-3. Asegúrate de que `MangoEconomy-1.1.0.jar` esté también en `plugins/`
+3. Asegúrate de que `MythicEconomy-1.1.0.jar` esté también en `plugins/`
 4. Reinicia el servidor
 
 ### Para distribución:
 
-1. **NO incluyas** el JAR de MangoEconomy en tu plugin final
-2. En la documentación de tu plugin, especifica que requiere MangoEconomy
-3. Los usuarios deben instalar MangoEconomy por separado
+1. **NO incluyas** el JAR de MythicEconomy en tu plugin final
+2. En la documentación de tu plugin, especifica que requiere MythicEconomy
+3. Los usuarios deben instalar MythicEconomy por separado
 
 ## ⚠️ Notas Importantes
 
@@ -182,18 +182,18 @@ mvn clean package
 Si prefieres instalar en tu repositorio local de Maven:
 
 ```bash
-# Instalar MangoEconomy en repositorio local
+# Instalar MythicEconomy en repositorio local
 mvn install:install-file \
-  -Dfile=MangoEconomy-1.1.0.jar \
+  -Dfile=MythicEconomy-1.1.0.jar \
   -DgroupId=com.spectrasonic \
-  -DartifactId=MangoEconomy \
+  -DartifactId=MythicEconomy \
   -Dversion=1.1.0 \
   -Dpackaging=jar
 
 # Luego usar dependencia normal
 <dependency>
     <groupId>com.spectrasonic</groupId>
-    <artifactId>MangoEconomy</artifactId>
+    <artifactId>MythicEconomy</artifactId>
     <version>1.1.0</version>
     <scope>provided</scope>
 </dependency>
@@ -205,8 +205,8 @@ mvn install:install-file \
 
 ```java
 public void testAPI() {
-    if (MangoEconomyAPI.isAvailable()) {
-        MangoEconomyAPI api = MangoEconomyAPI.getInstance();
+    if (MythicEconomyAPI.isAvailable()) {
+        MythicEconomyAPI api = MythicEconomyAPI.getInstance();
         getLogger().info("API disponible - Símbolo de moneda: " + api.getCurrencySymbol());
     } else {
         getLogger().warning("API no disponible");
@@ -217,30 +217,30 @@ public void testAPI() {
 ### En el log del servidor deberías ver:
 
 ```
-[TuPlugin] MangoEconomy API cargada correctamente!
+[TuPlugin] MythicEconomy API cargada correctamente!
 [TuPlugin] API disponible - Símbolo de moneda: $
 ```
 
 ## 🆘 Solución de Problemas
 
-### Error: "Cannot resolve symbol MangoEconomyAPI"
+### Error: "Cannot resolve symbol MythicEconomyAPI"
 
-- ✅ Verifica que el JAR esté en `lib/MangoEconomy-1.1.0.jar`
+- ✅ Verifica que el JAR esté en `lib/MythicEconomy-1.1.0.jar`
 - ✅ Verifica la configuración en `pom.xml` o `build.gradle`
 - ✅ Refresca/reimporta el proyecto en tu IDE
 
-### Error: "MangoEconomy no está disponible"
+### Error: "MythicEconomy no está disponible"
 
-- ✅ Verifica que MangoEconomy esté instalado en el servidor
-- ✅ Verifica que tu plugin tenga `depend: [MangoEconomy]` en plugin.yml
-- ✅ Verifica que MangoEconomy se cargue antes que tu plugin
+- ✅ Verifica que MythicEconomy esté instalado en el servidor
+- ✅ Verifica que tu plugin tenga `depend: [MythicEconomy]` en plugin.yml
+- ✅ Verifica que MythicEconomy se cargue antes que tu plugin
 
 ### Error de compilación con Maven
 
 - ✅ Verifica la ruta del systemPath
-- ✅ Usa rutas relativas: `${project.basedir}/lib/MangoEconomy-1.1.0.jar`
+- ✅ Usa rutas relativas: `${project.basedir}/lib/MythicEconomy-1.1.0.jar`
 - ✅ No uses rutas absolutas
 
 ---
 
-¡Con esta configuración podrás usar la API de MangoEconomy fácilmente en todos tus proyectos! 🎉
+¡Con esta configuración podrás usar la API de MythicEconomy fácilmente en todos tus proyectos! 🎉

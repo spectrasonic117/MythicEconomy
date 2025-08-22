@@ -1,7 +1,7 @@
-package com.spectrasonic.MangoEconomy.placeholders;
+package com.spectrasonic.MythicEconomy.placeholders;
 
-import com.spectrasonic.MangoEconomy.Main;
-import com.spectrasonic.MangoEconomy.manager.EconomyManager;
+import com.spectrasonic.MythicEconomy.Main;
+import com.spectrasonic.MythicEconomy.manager.EconomyManager;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -9,23 +9,23 @@ import org.bukkit.entity.Player;
 import java.util.Map;
 
 /**
- * Clase de placeholders para MangoEconomy
- * Todos los placeholders tienen el prefijo "mangoeco_"
+ * Clase de placeholders para MythicEconomy
+ * Todos los placeholders tienen el prefijo "eco_"
  * Se actualiza cada 10 ticks (0.5 segundos)
  */
-public class MangoEconomyPlaceholders extends PlaceholderExpansion {
+public class MythicEconomyPlaceholders extends PlaceholderExpansion {
 
     private final Main plugin;
     private final EconomyManager economyManager;
 
-    public MangoEconomyPlaceholders(Main plugin) {
+    public MythicEconomyPlaceholders(Main plugin) {
         this.plugin = plugin;
         this.economyManager = plugin.getEconomyManager();
     }
 
     @Override
     public String getIdentifier() {
-        return "mangoeco";
+        return "eco";
     }
 
     @Override
@@ -35,7 +35,7 @@ public class MangoEconomyPlaceholders extends PlaceholderExpansion {
 
     @Override
     public String getVersion() {
-        return plugin.getDescription().getVersion();
+        return plugin.getPluginMeta().getVersion();
     }
 
     @Override
@@ -157,7 +157,8 @@ public class MangoEconomyPlaceholders extends PlaceholderExpansion {
 
             // Verificar si el jugador puede pagar una cantidad específica
             default:
-                // Placeholder dinámico para verificar si puede pagar: %mangoeco_can_pay_<amount>%
+                // Placeholder dinámico para verificar si puede pagar:
+                // %eco_can_pay_<amount>%
                 if (params.startsWith("can_pay_")) {
                     if (onlinePlayer != null) {
                         try {
@@ -170,7 +171,7 @@ public class MangoEconomyPlaceholders extends PlaceholderExpansion {
                     return "N/A";
                 }
 
-                // Placeholder dinámico para top players: %mangoeco_top_<number>_player%
+                // Placeholder dinámico para top players: %eco_top_<number>_player%
                 if (params.startsWith("top_") && params.endsWith("_player")) {
                     try {
                         String numberStr = params.substring(4, params.length() - 7);
@@ -181,7 +182,7 @@ public class MangoEconomyPlaceholders extends PlaceholderExpansion {
                     }
                 }
 
-                // Placeholder dinámico para top money: %mangoeco_top_<number>_money%
+                // Placeholder dinámico para top money: %eco_top_<number>_money%
                 if (params.startsWith("top_") && params.endsWith("_money")) {
                     try {
                         String numberStr = params.substring(4, params.length() - 6);
@@ -219,14 +220,14 @@ public class MangoEconomyPlaceholders extends PlaceholderExpansion {
     private int getPlayerRank(Player player) {
         Map<String, Double> topBalances = economyManager.getTopBalances(Integer.MAX_VALUE);
         int rank = 1;
-        
+
         for (Map.Entry<String, Double> entry : topBalances.entrySet()) {
             if (entry.getKey().equals(player.getName())) {
                 return rank;
             }
             rank++;
         }
-        
+
         return rank;
     }
 
@@ -235,11 +236,11 @@ public class MangoEconomyPlaceholders extends PlaceholderExpansion {
      */
     private String getTopPlayer(int position) {
         Map<String, Double> topBalances = economyManager.getTopBalances(position);
-        
+
         if (topBalances.size() >= position) {
             return topBalances.keySet().toArray(new String[0])[position - 1];
         }
-        
+
         return "N/A";
     }
 
@@ -248,12 +249,12 @@ public class MangoEconomyPlaceholders extends PlaceholderExpansion {
      */
     private String getTopMoney(int position) {
         Map<String, Double> topBalances = economyManager.getTopBalances(position);
-        
+
         if (topBalances.size() >= position) {
             Double amount = topBalances.values().toArray(new Double[0])[position - 1];
             return economyManager.formatMoney(amount);
         }
-        
+
         return "N/A";
     }
 }

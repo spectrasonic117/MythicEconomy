@@ -1,13 +1,13 @@
-# Ejemplo de Plugin usando MangoEconomy API
+# Ejemplo de Plugin usando MythicEconomy API
 
-Este es un ejemplo completo de cómo crear un plugin que use la API de MangoEconomy.
+Este es un ejemplo completo de cómo crear un plugin que use la API de MythicEconomy.
 
 ## Estructura del Proyecto
 
 ```
 MiPlugin/
 ├── lib/
-│   └── MangoEconomy-1.1.0.jar     # JAR de MangoEconomy aquí
+│   └── MythicEconomy-1.1.0.jar     # JAR de MythicEconomy aquí
 ├── src/main/java/com/ejemplo/miplugin/
 │   ├── MiPlugin.java
 │   ├── commands/TiendaCommand.java
@@ -25,8 +25,8 @@ version: 1.0.0
 main: com.ejemplo.miplugin.MiPlugin
 api-version: '1.21'
 authors: [TuNombre]
-description: "Ejemplo de plugin usando MangoEconomy API"
-depend: [MangoEconomy]
+description: "Ejemplo de plugin usando MythicEconomy API"
+depend: [MythicEconomy]
 
 commands:
   tienda:
@@ -39,27 +39,27 @@ commands:
 ```java
 package com.ejemplo.miplugin;
 
-import com.spectrasonic.MangoEconomy.api.MangoEconomyAPI;
+import com.spectrasonic.MythicEconomy.api.MythicEconomyAPI;
 import com.ejemplo.miplugin.commands.TiendaCommand;
 import com.ejemplo.miplugin.listeners.EconomyListener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class MiPlugin extends JavaPlugin {
     
-    private MangoEconomyAPI economyAPI;
+    private MythicEconomyAPI economyAPI;
     
     @Override
     public void onEnable() {
-        // Verificar si MangoEconomy está disponible
-        if (!MangoEconomyAPI.isAvailable()) {
-            getLogger().severe("MangoEconomy no está disponible! Deshabilitando plugin...");
+        // Verificar si MythicEconomy está disponible
+        if (!MythicEconomyAPI.isAvailable()) {
+            getLogger().severe("MythicEconomy no está disponible! Deshabilitando plugin...");
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
         
         // Obtener la instancia de la API
-        this.economyAPI = MangoEconomyAPI.getInstance();
-        getLogger().info("MangoEconomy API cargada correctamente!");
+        this.economyAPI = MythicEconomyAPI.getInstance();
+        getLogger().info("MythicEconomy API cargada correctamente!");
         
         // Registrar comandos
         getCommand("tienda").setExecutor(new TiendaCommand(economyAPI));
@@ -75,7 +75,7 @@ public class MiPlugin extends JavaPlugin {
         getLogger().info("MiPlugin deshabilitado.");
     }
     
-    public MangoEconomyAPI getEconomyAPI() {
+    public MythicEconomyAPI getEconomyAPI() {
         return economyAPI;
     }
 }
@@ -86,7 +86,7 @@ public class MiPlugin extends JavaPlugin {
 ```java
 package com.ejemplo.miplugin.commands;
 
-import com.spectrasonic.MangoEconomy.api.MangoEconomyAPI;
+import com.spectrasonic.MythicEconomy.api.MythicEconomyAPI;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -96,9 +96,9 @@ import org.bukkit.inventory.ItemStack;
 
 public class TiendaCommand implements CommandExecutor {
     
-    private final MangoEconomyAPI economyAPI;
+    private final MythicEconomyAPI economyAPI;
     
-    public TiendaCommand(MangoEconomyAPI economyAPI) {
+    public TiendaCommand(MythicEconomyAPI economyAPI) {
         this.economyAPI = economyAPI;
     }
     
@@ -175,10 +175,10 @@ public class TiendaCommand implements CommandExecutor {
 ```java
 package com.ejemplo.miplugin.listeners;
 
-import com.spectrasonic.MangoEconomy.api.MangoEconomyAPI;
-import com.spectrasonic.MangoEconomy.api.events.MoneyAddEvent;
-import com.spectrasonic.MangoEconomy.api.events.MoneyRemoveEvent;
-import com.spectrasonic.MangoEconomy.api.events.MoneyTransferEvent;
+import com.spectrasonic.MythicEconomy.api.MythicEconomyAPI;
+import com.spectrasonic.MythicEconomy.api.events.MoneyAddEvent;
+import com.spectrasonic.MythicEconomy.api.events.MoneyRemoveEvent;
+import com.spectrasonic.MythicEconomy.api.events.MoneyTransferEvent;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -188,9 +188,9 @@ import org.bukkit.event.player.PlayerJoinEvent;
 
 public class EconomyListener implements Listener {
     
-    private final MangoEconomyAPI economyAPI;
+    private final MythicEconomyAPI economyAPI;
     
-    public EconomyListener(MangoEconomyAPI economyAPI) {
+    public EconomyListener(MythicEconomyAPI economyAPI) {
         this.economyAPI = economyAPI;
     }
     
@@ -251,7 +251,7 @@ public class EconomyListener implements Listener {
         }
     }
     
-    // Escuchar eventos de la API de MangoEconomy
+    // Escuchar eventos de la API de MythicEconomy
     @EventHandler
     public void onMoneyAdd(MoneyAddEvent event) {
         Player player = event.getPlayer();
@@ -332,13 +332,13 @@ public class EconomyListener implements Listener {
             <scope>provided</scope>
         </dependency>
         
-        <!-- MangoEconomy (dependencia local) -->
+        <!-- MythicEconomy (dependencia local) -->
         <dependency>
             <groupId>com.spectrasonic</groupId>
-            <artifactId>MangoEconomy</artifactId>
+            <artifactId>MythicEconomy</artifactId>
             <version>1.1.0</version>
             <scope>system</scope>
-            <systemPath>${project.basedir}/lib/MangoEconomy-1.1.0.jar</systemPath>
+            <systemPath>${project.basedir}/lib/MythicEconomy-1.1.0.jar</systemPath>
         </dependency>
     </dependencies>
 
@@ -362,7 +362,7 @@ public class EconomyListener implements Listener {
 
 Este plugin de ejemplo demuestra:
 
-1. **Verificación de disponibilidad** de MangoEconomy
+1. **Verificación de disponibilidad** de MythicEconomy
 2. **Uso básico de la API** para comprar items
 3. **Sistema de recompensas** automático
 4. **Escucha de eventos** de la API
@@ -373,7 +373,7 @@ Este plugin de ejemplo demuestra:
 
 1. **Preparar dependencia:**
    - Crea una carpeta `lib/` en la raíz de tu proyecto
-   - Coloca `MangoEconomy-1.1.0.jar` en la carpeta `lib/`
+   - Coloca `MythicEconomy-1.1.0.jar` en la carpeta `lib/`
 
 2. **Configurar proyecto:**
    - Copia el código en tu proyecto
@@ -385,7 +385,7 @@ Este plugin de ejemplo demuestra:
    ```
 
 4. **Instalar:**
-   - Asegúrate de tener MangoEconomy instalado en tu servidor
+   - Asegúrate de tener MythicEconomy instalado en tu servidor
    - Coloca tu JAR compilado en la carpeta `plugins/`
    - Reinicia el servidor
 
