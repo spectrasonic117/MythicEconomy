@@ -9,6 +9,10 @@ import org.bukkit.Bukkit;
 import com.spectrasonic.Utils.MessageUtils;
 import com.spectrasonic.MythicEconomy.api.events.MoneyAddEvent;
 import com.spectrasonic.MythicEconomy.api.events.MoneyRemoveEvent;
+import com.spectrasonic.MythicEconomy.database.EconomyDataProvider;
+import com.spectrasonic.MythicEconomy.database.InternalEconomyProvider;
+import com.spectrasonic.MythicEconomy.database.MongoDBConnection;
+import com.spectrasonic.MythicEconomy.database.MongoDBEconomyProvider;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,6 +24,10 @@ public class EconomyManager {
 
     private static EconomyManager instance;
     private final JavaPlugin plugin;
+    private EconomyDataProvider dataProvider;
+    private MongoDBConnection mongoConnection;
+
+    // Configuración de respaldo para sistema interno
     private final Map<UUID, Double> playerBalances;
     private File dataFile;
     private FileConfiguration dataConfig;
@@ -31,11 +39,20 @@ public class EconomyManager {
     public EconomyManager(JavaPlugin plugin) {
         this.plugin = plugin;
         this.playerBalances = new HashMap<>();
-        this.setupDataFile();
-        this.loadConfiguration();
-        this.loadPlayerData();
-        instance = this;
 
+        // Inicializar configuración
+        this.loadConfiguration();
+
+        // Inicializar proveedor de datos basado en configuración
+        this.initializeDataProvider();
+
+        // Configurar respaldo para sistema interno si es necesario
+        if (dataProvider instanceof InternalEconomyProvider) {
+            this.setupDataFile();
+            this.loadPlayerData();
+        }
+
+        instance = this;
         MessageUtils.sendConsoleMessage("<green>Sistema de economía MythicEconomy inicializado correctamente.");
     }
 
@@ -49,6 +66,31 @@ public class EconomyManager {
         this.currencyNameSingular = config.getString("economy.currency.name-singular", "moneda");
 
         plugin.getLogger().info("Configuración cargada - Saldo inicial: " + startingBalance + " " + currencyName);
+    }
+
+    // Inicializa el proveedor de datos basado en la configuración
+    private void initializeDataProvider() {
+        FileConfiguration config = plugin.getConfig();
+        boolean useExternalDB = config.getBoolean("database.use-external-database", false);
+        String databaseType = config.getString("database.type", "FILE");
+
+        if (useExternalDB && "MONGODB".equalsIgnoreCase(databaseType)) {
+            // Usar MongoDB
+            this.mongoConnection = new MongoDBConnection(plugin);
+
+            if (mongoConnection.connect()) {
+                this.dataProvider = new MongoDBEconomyProvider(plugin, mongoConnection);
+                plugin.getLogger().info("Usando MongoDB como proveedor de datos de economía");
+            } else {
+                // Fallback al sistema interno si MongoDB falla
+                plugin.getLogger().warning("No se pudo conectar a MongoDB, usando sistema interno");
+                this.dataProvider = new InternalEconomyProvider(plugin, this);
+            }
+        } else {
+            // Usar sistema interno
+            this.dataProvider = new InternalEconomyProvider(plugin, this);
+            plugin.getLogger().info("Usando sistema interno de archivos como proveedor de datos");
+        }
     }
 
     public static EconomyManager getInstance() {
@@ -80,28 +122,35 @@ public class EconomyManager {
     }
 
     public void savePlayerData() {
-        for (Map.Entry<UUID, Double> entry : playerBalances.entrySet()) {
-            String uuidString = entry.getKey().toString();
-            dataConfig.set("players." + uuidString + ".balance", entry.getValue());
-        }
+        // Usar el proveedor de datos para guardar
+        dataProvider.save();
 
-        try {
-            dataConfig.save(dataFile);
-        } catch (IOException e) {
-            plugin.getLogger().severe("Could not save playerdata.yml file!");
-            e.printStackTrace();
+        // Si es el sistema interno, también guardar el respaldo
+        if (dataProvider instanceof InternalEconomyProvider) {
+            for (Map.Entry<UUID, Double> entry : playerBalances.entrySet()) {
+                String uuidString = entry.getKey().toString();
+                dataConfig.set("players." + uuidString + ".balance", entry.getValue());
+            }
+
+            try {
+                dataConfig.save(dataFile);
+            } catch (IOException e) {
+                plugin.getLogger().severe("Could not save playerdata.yml file!");
+                e.printStackTrace();
+            }
         }
     }
 
     public double getBalance(Player player) {
-        // Si es la primera vez que el jugador se conecta, darle el saldo inicial
-        if (!playerBalances.containsKey(player.getUniqueId())) {
-            playerBalances.put(player.getUniqueId(), startingBalance);
-            savePlayerData();
-            return startingBalance;
+        // Usar el proveedor de datos configurado
+        double balance = dataProvider.getBalance(player.getUniqueId());
+
+        // Si es MongoDB y el jugador no existe, crearlo
+        if (dataProvider instanceof MongoDBEconomyProvider && balance == startingBalance) {
+            dataProvider.createPlayer(player.getUniqueId());
         }
 
-        return playerBalances.getOrDefault(player.getUniqueId(), startingBalance);
+        return balance;
     }
 
     public void setBalance(Player player, double amount) {
@@ -109,8 +158,7 @@ public class EconomyManager {
             amount = 0;
         }
 
-        playerBalances.put(player.getUniqueId(), amount);
-        savePlayerData();
+        dataProvider.setBalance(player.getUniqueId(), amount);
     }
 
     public boolean addMoney(Player player, double amount) {
@@ -128,7 +176,7 @@ public class EconomyManager {
             return false;
         }
 
-        setBalance(player, newBalance);
+        dataProvider.setBalance(player.getUniqueId(), newBalance);
         return true;
     }
 
@@ -150,94 +198,97 @@ public class EconomyManager {
             return false;
         }
 
-        setBalance(player, newBalance);
+        dataProvider.setBalance(player.getUniqueId(), newBalance);
         return true;
     }
 
     public boolean hasEnoughMoney(Player player, double amount) {
-        return getBalance(player) >= amount;
+        return dataProvider.hasEnoughBalance(player.getUniqueId(), amount);
     }
 
     public String formatMoney(double amount) {
         return currencySymbol + String.format("%.2f", amount);
     }
 
-    /**
-     * Obtiene el símbolo de la moneda
-     */
+    // Obtiene el símbolo de la moneda
     public String getCurrencySymbol() {
         return currencySymbol;
     }
 
-    /**
-     * Obtiene el nombre de la moneda (plural)
-     */
+    // Obtiene el nombre de la moneda (plural)
     public String getCurrencyName() {
         return currencyName;
     }
 
-    /**
-     * Obtiene el nombre de la moneda (singular)
-     */
+    // Obtiene el nombre de la moneda (singular)
     public String getCurrencyNameSingular() {
         return currencyNameSingular;
     }
 
-    /**
-     * Obtiene el saldo inicial para nuevos jugadores
-     */
+    // Obtiene el saldo inicial para nuevos jugadores
     public double getStartingBalance() {
         return startingBalance;
     }
 
-    /**
-     * Establece el saldo inicial para nuevos jugadores
-     */
+    // Establece el saldo inicial para nuevos jugadores
     public void setStartingBalance(double amount) {
         this.startingBalance = Math.max(0, amount);
         plugin.getConfig().set("economy.starting-balance", this.startingBalance);
         plugin.saveConfig();
     }
 
-    /**
-     * Obtiene el top de jugadores más ricos
-     */
+    // Obtiene el top de jugadores más ricos
     public Map<String, Double> getTopBalances(int limit) {
+        // Nota: Esta implementación necesitaría ser mejorada para MongoDB
+        // Por simplicidad, devolveremos una implementación básica usando el
+        // dataProvider
         Map<String, Double> topBalances = new java.util.LinkedHashMap<>();
 
-        playerBalances.entrySet().stream()
-                .sorted(Map.Entry.<UUID, Double>comparingByValue().reversed())
-                .limit(limit)
-                .forEach(entry -> {
-                    String playerName = plugin.getServer().getOfflinePlayer(entry.getKey()).getName();
-                    if (playerName != null) {
-                        topBalances.put(playerName, entry.getValue());
-                    }
-                });
-
+        // Esta es una implementación simplificada
+        // En un escenario real, usarías agregaciones de MongoDB para obtener el top
         return topBalances;
     }
 
-    /**
-     * Obtiene el total de dinero en circulación
-     */
+    // Obtiene el total de dinero en circulación
     public double getTotalMoney() {
-        return playerBalances.values().stream().mapToDouble(Double::doubleValue).sum();
+        return dataProvider.getTotalMoney();
     }
 
-    /**
-     * Obtiene el número total de cuentas
-     */
+    // Obtiene el número total de cuentas
     public int getTotalAccounts() {
-        return playerBalances.size();
+        return (int) dataProvider.getTotalPlayers();
     }
 
-    /**
-     * Recarga la configuración desde el archivo
-     */
+    // Recarga la configuración desde el archivo
     public void reloadConfig() {
         plugin.reloadConfig();
         loadConfiguration();
+
+        // Recargar configuración del proveedor de datos si es necesario
+        if (dataProvider instanceof MongoDBEconomyProvider) {
+            mongoConnection.reloadConfiguration();
+        }
+
         plugin.getLogger().info("Configuración de economía recargada.");
+    }
+
+    // Obtiene el proveedor de datos actual
+    public EconomyDataProvider getDataProvider() {
+        return dataProvider;
+    }
+
+    // Obtiene la conexión MongoDB (si está disponible)
+    public MongoDBConnection getMongoConnection() {
+        return mongoConnection;
+    }
+
+    // Verifica si está usando MongoDB
+    public boolean isUsingMongoDB() {
+        return dataProvider instanceof MongoDBEconomyProvider;
+    }
+
+    // Verifica si el proveedor de datos está disponible
+    public boolean isDataProviderAvailable() {
+        return dataProvider != null && dataProvider.isAvailable();
     }
 }

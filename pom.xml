@@ -5,13 +5,14 @@
 
         <groupId>com.spectrasonic</groupId>
         <artifactId>MythicEconomy</artifactId>
-        <version>1.1.0</version>
+        <version>1.2.0-SNAPSHOT</version>
         <packaging>jar</packaging>
 
         <properties>
             <!-- Java Version -->
-            <maven.compiler.source>21</maven.compiler.source>
-            <maven.compiler.target>21</maven.compiler.target>
+            <java.version>21</java.version>
+            <maven.compiler.source>${java.version}</maven.compiler.source>
+            <maven.compiler.target>${java.version}</maven.compiler.target>
             <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
             <!-- Dependencies version -->
@@ -23,6 +24,7 @@
             <compiler.version>3.14.0</compiler.version>
             <shade.version>3.6.0</shade.version>
             <resources.version>3.3.1</resources.version>
+            <commandapi.version>10.1.2</commandapi.version>
         </properties>
 
         <repositories>
@@ -80,12 +82,18 @@
                 <version>${adventure.version}</version>
             </dependency>
 
-            <!-- Command API -->
-            <dependency>
+            <!-- CommandAPI -->
+            <!-- <dependency>
                 <groupId>dev.jorel</groupId>
                 <artifactId>commandapi-bukkit-core</artifactId>
-                <version>10.1.2</version>
+                <version>${commandapi.version}</version>
                 <scope>provided</scope>
+            </dependency> -->
+
+            <dependency>
+                <groupId>dev.jorel</groupId>
+                <artifactId>commandapi-bukkit-shade</artifactId>
+                <version>${commandapi.version}</version>
             </dependency>
 
             <!-- Vault -->
@@ -104,6 +112,12 @@
                 <scope>provided</scope>
             </dependency>
 
+            <!-- MongoDB Java Driver -->
+            <dependency>
+                <groupId>org.mongodb</groupId>
+                <artifactId>mongodb-driver-sync</artifactId>
+                <version>5.0.1</version>
+            </dependency>
 
         </dependencies>
 
@@ -123,7 +137,7 @@
                         <source>${maven.compiler.source}</source>
                         <target>${maven.compiler.target}</target>
                         <encoding>${project.build.sourceEncoding}</encoding>
-                        <release>21</release>
+                        <release>${java.version}</release>
                         <annotationProcessorPaths>
                             <path>
                                 <groupId>org.projectlombok</groupId>
@@ -143,16 +157,12 @@
                         <outputDirectory>${project.basedir}/out</outputDirectory>
                         <finalName>${project.artifactId}-${project.version}</finalName>
                         <dependencyReducedPomLocation>${project.build.directory}/dependency-reduced-pom.xml</dependencyReducedPomLocation>
-                        <!-- <relocations>
+                        <relocations>
                             <relocation>
-                                <pattern>co.aikar.commands</pattern>
-                                <shadedPattern>spectrasonic.acf</shadedPattern>
+                                <pattern>dev.jorel.commandapi</pattern>
+                                <shadedPattern>com.spectrasonic.commandapi</shadedPattern>
                             </relocation>
-                            <relocation>
-                                <pattern>co.aikar.locales</pattern>
-                                <shadedPattern>spectrasonic.locales</shadedPattern>
-                            </relocation>
-                        </relocations> -->
+                        </relocations>
                         <shadedArtifactAttached>true</shadedArtifactAttached>
                     </configuration>
                     <executions>

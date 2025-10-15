@@ -11,6 +11,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import java.util.HashSet;
 import java.util.Set;
 
+@Deprecated
 public class ItemBuilder {
     private final ItemStack item;
     private final ItemMeta meta;
@@ -18,7 +19,8 @@ public class ItemBuilder {
 
     public static ItemBuilder setMaterial(String materialName) {
         Material material = Material.matchMaterial(materialName.toUpperCase());
-        if (material == null) throw new IllegalArgumentException("Invalid material: " + materialName);
+        if (material == null)
+            throw new IllegalArgumentException("Invalid material: " + materialName);
         return new ItemBuilder(material);
     }
 

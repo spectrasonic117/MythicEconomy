@@ -11,10 +11,7 @@ import com.spectrasonic.MythicEconomy.manager.EconomyManager;
 import java.util.List;
 import java.util.ArrayList;
 
-/**
- * Proveedor de Vault Economy que permite que otros plugins usen MythicEconomy
- * a través de la API estándar de Vault
- */
+// Proveedor de Vault Economy que permite que otros plugins usen MythicEconomy a través de la API estándar de Vault
 public class VaultEconomyProvider implements Economy {
 
     private final EconomyManager economyManager;

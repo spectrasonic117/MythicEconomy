@@ -1,6 +1,5 @@
 package com.spectrasonic.MythicEconomy;
 
-import dev.jorel.commandapi.CommandAPI;
 import com.spectrasonic.MythicEconomy.commands.EconomyCommand;
 import com.spectrasonic.MythicEconomy.commands.MoneyCommand;
 import com.spectrasonic.MythicEconomy.commands.PayCommand;
@@ -13,6 +12,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.ServicePriority;
 import net.milkbowl.vault.economy.Economy;
 
+import dev.jorel.commandapi.CommandAPI;
+import dev.jorel.commandapi.CommandAPIBukkitConfig;
+
 public final class Main extends JavaPlugin {
 
     private EconomyManager economyManager;
@@ -22,28 +24,26 @@ public final class Main extends JavaPlugin {
     private boolean placeholderAPIEnabled = false;
 
     @Override
+    public void onLoad() {
+        CommandAPI.onLoad(new CommandAPIBukkitConfig(this));
+    }
+
+    @Override
     public void onEnable() {
-        // Inicializar CommandAPI
         CommandAPI.onEnable();
 
-        // Inicializar el sistema de economía
         this.economyManager = new EconomyManager(this);
 
-        // Inicializar Vault si está disponible
         this.setupVault();
 
-        // Inicializar PlaceholderAPI si está disponible
         this.setupPlaceholderAPI();
 
-        // Registrar comandos
         new EconomyCommand().register();
         new MoneyCommand().register();
         new PayCommand().register();
 
-        // Configurar utilidades
         CommandUtils.setPlugin(this);
 
-        // Mensaje de inicio
         MessageUtils.sendStartupMessage(this);
         MessageUtils.sendConsoleMessage("<green>Sistema de economía inicializado correctamente.</green>");
 
@@ -58,13 +58,11 @@ public final class Main extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        // Desregistrar Vault si está habilitado
         if (vaultEnabled && vaultEconomyProvider != null) {
             getServer().getServicesManager().unregister(Economy.class, vaultEconomyProvider);
             MessageUtils.sendConsoleMessage("<yellow>Proveedor de Vault desregistrado.</yellow>");
         }
 
-        // Desregistrar PlaceholderAPI si está habilitado
         if (placeholderAPIEnabled && placeholders != null) {
             placeholders.unregister();
             MessageUtils.sendConsoleMessage("<yellow>Placeholders de PlaceholderAPI desregistrados.</yellow>");
@@ -80,9 +78,7 @@ public final class Main extends JavaPlugin {
         MessageUtils.sendShutdownMessage(this);
     }
 
-    /**
-     * Configura la integración con Vault si está disponible
-     */
+    // Configura la integración con Vault si está disponible
     private void setupVault() {
         if (getServer().getPluginManager().getPlugin("Vault") == null) {
             getLogger().info("Vault no encontrado. Funcionalidad de Vault deshabilitada.");
@@ -109,16 +105,12 @@ public final class Main extends JavaPlugin {
         }
     }
 
-    /**
-     * Verifica si Vault está habilitado
-     */
+    // Verifica si Vault está habilitado
     public boolean isVaultEnabled() {
         return vaultEnabled;
     }
 
-    /**
-     * Obtiene el proveedor de Vault
-     */
+    // Obtiene el proveedor de Vault
     public VaultEconomyProvider getVaultProvider() {
         return vaultEconomyProvider;
     }
@@ -127,9 +119,7 @@ public final class Main extends JavaPlugin {
         return economyManager;
     }
 
-    /**
-     * Configura la integración con PlaceholderAPI si está disponible
-     */
+    // Configura la integración con PlaceholderAPI si está disponible
     private void setupPlaceholderAPI() {
         if (getServer().getPluginManager().getPlugin("PlaceholderAPI") == null) {
             getLogger().info("PlaceholderAPI no encontrado. Funcionalidad de placeholders deshabilitada.");
@@ -154,16 +144,12 @@ public final class Main extends JavaPlugin {
         }
     }
 
-    /**
-     * Verifica si PlaceholderAPI está habilitado
-     */
+    // Verifica si PlaceholderAPI está habilitado
     public boolean isPlaceholderAPIEnabled() {
         return placeholderAPIEnabled;
     }
 
-    /**
-     * Obtiene la instancia de placeholders
-     */
+    // Obtiene la instancia de placeholders
     public MythicEconomyPlaceholders getPlaceholders() {
         return placeholders;
     }

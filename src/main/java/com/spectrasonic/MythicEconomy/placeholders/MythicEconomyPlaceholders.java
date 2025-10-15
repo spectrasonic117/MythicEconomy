@@ -8,11 +8,6 @@ import org.bukkit.entity.Player;
 
 import java.util.Map;
 
-/**
- * Clase de placeholders para MythicEconomy
- * Todos los placeholders tienen el prefijo "eco_"
- * Se actualiza cada 10 ticks (0.5 segundos)
- */
 public class MythicEconomyPlaceholders extends PlaceholderExpansion {
 
     private final Main plugin;
@@ -197,9 +192,7 @@ public class MythicEconomyPlaceholders extends PlaceholderExpansion {
         }
     }
 
-    /**
-     * Formatea un número en formato corto (K, M, B, T)
-     */
+    // Formatea un número en formato corto (K, M, B, T)
     private String formatShort(double amount) {
         if (amount >= 1_000_000_000_000L) {
             return String.format("%.1fT", amount / 1_000_000_000_000.0);
@@ -214,9 +207,7 @@ public class MythicEconomyPlaceholders extends PlaceholderExpansion {
         }
     }
 
-    /**
-     * Obtiene la posición del jugador en el ranking de dinero
-     */
+    // Obtiene la posición del jugador en el ranking de dinero
     private int getPlayerRank(Player player) {
         Map<String, Double> topBalances = economyManager.getTopBalances(Integer.MAX_VALUE);
         int rank = 1;
@@ -231,9 +222,7 @@ public class MythicEconomyPlaceholders extends PlaceholderExpansion {
         return rank;
     }
 
-    /**
-     * Obtiene el nombre del jugador en la posición especificada del top
-     */
+    // Obtiene el nombre del jugador en la posición especificada del top
     private String getTopPlayer(int position) {
         Map<String, Double> topBalances = economyManager.getTopBalances(position);
 
@@ -244,9 +233,7 @@ public class MythicEconomyPlaceholders extends PlaceholderExpansion {
         return "N/A";
     }
 
-    /**
-     * Obtiene el dinero del jugador en la posición especificada del top
-     */
+    // Obtiene el dinero del jugador en la posición especificada del top
     private String getTopMoney(int position) {
         Map<String, Double> topBalances = economyManager.getTopBalances(position);
 

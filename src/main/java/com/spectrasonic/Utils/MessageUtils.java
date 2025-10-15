@@ -8,19 +8,20 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import lombok.experimental.UtilityClass;
+
 import java.time.Duration;
 
+@UtilityClass
 public final class MessageUtils {
 
     private static final JavaPlugin plugin = JavaPlugin.getProvidingPlugin(MessageUtils.class);
     public static final String DIVIDER = "<gray>----------------------------------------</gray>";
-    public static final String PREFIX = "<gray>[<gold>"+ plugin.getPluginMeta().getName()+"</gold>]</gray> <gold>»</gold> ";
+    public static final String PREFIX = "<gray>[<gold>" + plugin.getPluginMeta().getName()
+            + "</gold>]</gray> <gold>»</gold> ";
 
     private static final MiniMessage miniMessage = MiniMessage.miniMessage();
-
-    private MessageUtils() {
-        // Private constructor to prevent instantiation
-    }
 
     public static void sendMessage(CommandSender sender, String message) {
         sender.sendMessage(miniMessage.deserialize(PREFIX + message));
@@ -31,7 +32,8 @@ public final class MessageUtils {
     }
 
     public static void sendPermissionMessage(CommandSender sender) {
-        sender.sendMessage(miniMessage.deserialize(PREFIX + "<red>You do not have permission to use this command!</red>"));
+        sender.sendMessage(
+                miniMessage.deserialize(PREFIX + "<red>You do not have permission to use this command!</red>"));
     }
 
     public static void sendStartupMessage(JavaPlugin plugin) {
@@ -72,9 +74,7 @@ public final class MessageUtils {
     }
 
     public static void sendBroadcastMessage(String message) {
-        Bukkit.getOnlinePlayers().forEach(player -> 
-            player.sendMessage(miniMessage.deserialize(message))
-        );
+        Bukkit.getOnlinePlayers().forEach(player -> player.sendMessage(miniMessage.deserialize(message)));
     }
 
     public static void sendShutdownMessage(JavaPlugin plugin) {
@@ -93,10 +93,9 @@ public final class MessageUtils {
         final Component titleComponent = miniMessage.deserialize(title);
         final Component subtitleComponent = miniMessage.deserialize(subtitle);
         player.showTitle(Title.title(titleComponent, subtitleComponent, Times.times(
-            Duration.ofSeconds(fadeIn),
-            Duration.ofSeconds(stay),
-            Duration.ofSeconds(fadeOut)
-        )));
+                Duration.ofSeconds(fadeIn),
+                Duration.ofSeconds(stay),
+                Duration.ofSeconds(fadeOut))));
     }
 
     public static void sendActionBar(Player player, String message) {
@@ -107,20 +106,19 @@ public final class MessageUtils {
         final Component titleComponent = miniMessage.deserialize(title);
         final Component subtitleComponent = miniMessage.deserialize(subtitle);
         final Title formattedTitle = Title.title(titleComponent, subtitleComponent, Times.times(
-            Duration.ofSeconds(fadeIn),
-            Duration.ofSeconds(stay),
-            Duration.ofSeconds(fadeOut)
-        ));
+                Duration.ofSeconds(fadeIn),
+                Duration.ofSeconds(stay),
+                Duration.ofSeconds(fadeOut)));
 
         Bukkit.getOnlinePlayers().forEach(player -> player.showTitle(formattedTitle));
     }
 
-        // Uso - Send Title to players
-        // MiniMessageUtils.sendTitle(player, 
-        //     "<gold>¡Alerta!</gold>", 
-        //     "<red>Mensaje importante</red>", 
-        //     2, 40, 2
-        // );
+    // Uso - Send Title to players
+    // MiniMessageUtils.sendTitle(player,
+    // "<gold>¡Alerta!</gold>",
+    // "<red>Mensaje importante</red>",
+    // 2, 40, 2
+    // );
 
     public static void broadcastActionBar(String message) {
         final Component component = miniMessage.deserialize(message);
@@ -128,6 +126,7 @@ public final class MessageUtils {
     }
 
     // Uso Broadcast ActionBAR
-    // MiniMessageUtils.broadcastActionBar("<yellow>¡Evento e…special activado!</yellow>");
+    // MiniMessageUtils.broadcastActionBar("<yellow>¡Evento e…special
+    // activado!</yellow>");
 
 }

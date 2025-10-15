@@ -39,9 +39,12 @@ messages:
 
 # Configuración de base de datos
 database:
-  # Tipo de almacenamiento: FILE o MYSQL
+  # Tipo de almacenamiento: FILE, MYSQL o MONGODB
   type: "FILE"
-  
+
+  # Usar base de datos externa (true) o sistema interno del plugin (false)
+  use-external-database: false
+
   # Configuración para MySQL (si se usa)
   mysql:
     host: "localhost"
@@ -50,3 +53,22 @@ database:
     username: "root"
     password: ""
     table-prefix: "mango_"
+
+  # Configuración para MongoDB (si se usa)
+  mongodb:
+    # Cadena de conexión MongoDB
+    # Ejemplos:
+    # - Local: "mongodb://localhost:27017"
+    # - Con autenticación: "mongodb://usuario:password@localhost:27017"
+    # - MongoDB Atlas: "mongodb+srv://usuario:password@cluster.mongodb.net"
+    connection-string: "mongodb://localhost:27017"
+    database: "MythicEconomy"
+    collection: "player_economy"
+    # Configuración de conexión
+    connection:
+      # Tiempo de espera para conexión (en segundos)
+      timeout: 30
+      # Número máximo de conexiones en el pool
+      max-pool-size: 10
+      # Número mínimo de conexiones en el pool
+      min-pool-size: 5
