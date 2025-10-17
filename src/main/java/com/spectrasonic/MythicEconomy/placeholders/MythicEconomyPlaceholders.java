@@ -2,6 +2,8 @@ package com.spectrasonic.MythicEconomy.placeholders;
 
 import com.spectrasonic.MythicEconomy.Main;
 import com.spectrasonic.MythicEconomy.manager.EconomyManager;
+import com.spectrasonic.MythicEconomy.manager.CurrencyManager;
+import com.spectrasonic.MythicEconomy.models.Currency;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -12,10 +14,12 @@ public class MythicEconomyPlaceholders extends PlaceholderExpansion {
 
     private final Main plugin;
     private final EconomyManager economyManager;
+    private final CurrencyManager currencyManager;
 
     public MythicEconomyPlaceholders(Main plugin) {
         this.plugin = plugin;
         this.economyManager = plugin.getEconomyManager();
+        this.currencyManager = economyManager.getCurrencyManager();
     }
 
     @Override
@@ -150,8 +154,75 @@ public class MythicEconomyPlaceholders extends PlaceholderExpansion {
             case "vault_enabled":
                 return plugin.isVaultEnabled() ? "Habilitado" : "Deshabilitado";
 
-            // Verificar si el jugador puede pagar una cantidad específica
+            // ========== PLACEHOLDERS DINÁMICOS (DENTRO DEL DEFAULT) ==========
+
             default:
+                // ========== PLACEHOLDERS PARA MÚLTIPLES MONEDAS ==========
+
+                // Placeholders dinámicos para monedas específicas: %eco_<currency>_money%
+                if (params.endsWith("_money") && params.length() > 6) {
+                    try {
+                        String currencyId = params.substring(0, params.length() - 6);
+                        Currency currency = currencyManager.getCurrency(currencyId);
+
+                        if (currency != null && currency.isEnabled() && onlinePlayer != null) {
+                            double balance = economyManager.getBalance(onlinePlayer, currencyId);
+                            return currency.formatMoney(balance);
+                        }
+                        return "N/A";
+                    } catch (Exception e) {
+                        return "N/A";
+                    }
+                }
+
+                // Placeholders dinámicos para monedas específicas (raw): %eco_<currency>_money_raw%
+                if (params.endsWith("_money_raw") && params.length() > 10) {
+                    try {
+                        String currencyId = params.substring(0, params.length() - 10);
+                        Currency currency = currencyManager.getCurrency(currencyId);
+
+                        if (currency != null && currency.isEnabled() && onlinePlayer != null) {
+                            double balance = economyManager.getBalance(onlinePlayer, currencyId);
+                            return String.format(currency.isDecimal() ? "%.2f" : "%.0f", balance);
+                        }
+                        return "0.00";
+                    } catch (Exception e) {
+                        return "0.00";
+                    }
+                }
+
+                // Placeholders dinámicos para símbolos de monedas: %eco_<currency>_symbol%
+                if (params.endsWith("_symbol") && params.length() > 7) {
+                    try {
+                        String currencyId = params.substring(0, params.length() - 7);
+                        Currency currency = currencyManager.getCurrency(currencyId);
+
+                        if (currency != null) {
+                            return currency.getSymbol();
+                        }
+                        return "$";
+                    } catch (Exception e) {
+                        return "$";
+                    }
+                }
+
+                // Placeholders dinámicos para nombres de monedas: %eco_<currency>_name%
+                if (params.endsWith("_name") && params.length() > 5) {
+                    try {
+                        String currencyId = params.substring(0, params.length() - 5);
+                        Currency currency = currencyManager.getCurrency(currencyId);
+
+                        if (currency != null) {
+                            return currency.getName();
+                        }
+                        return "monedas";
+                    } catch (Exception e) {
+                        return "monedas";
+                    }
+                }
+
+                // ========== PLACEHOLDERS LEGACY (COMPATIBILIDAD) ==========
+
                 // Placeholder dinámico para verificar si puede pagar:
                 // %eco_can_pay_<amount>%
                 if (params.startsWith("can_pay_")) {

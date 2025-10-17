@@ -59,9 +59,7 @@ public class MoneyCommand {
                 .register();
     }
 
-    /**
-     * Muestra el saldo del propio jugador
-     */
+    // Muestra el saldo del propio jugador
     private void showPlayerBalance(Player sender, Player target) {
         EconomyManager economyManager = EconomyManager.getInstance();
         double balance = economyManager.getBalance(target);

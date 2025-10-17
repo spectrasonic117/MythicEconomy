@@ -3,6 +3,8 @@ package com.spectrasonic.MythicEconomy;
 import com.spectrasonic.MythicEconomy.commands.EconomyCommand;
 import com.spectrasonic.MythicEconomy.commands.MoneyCommand;
 import com.spectrasonic.MythicEconomy.commands.PayCommand;
+import com.spectrasonic.MythicEconomy.commands.CurrencyCommand;
+import com.spectrasonic.MythicEconomy.commands.BalanceCurrencyCommand;
 import com.spectrasonic.MythicEconomy.manager.EconomyManager;
 import com.spectrasonic.MythicEconomy.providers.VaultEconomyProvider;
 import com.spectrasonic.MythicEconomy.placeholders.MythicEconomyPlaceholders;
@@ -41,6 +43,8 @@ public final class Main extends JavaPlugin {
         new EconomyCommand().register();
         new MoneyCommand().register();
         new PayCommand().register();
+        new CurrencyCommand().register();
+        new BalanceCurrencyCommand().register();
 
         CommandUtils.setPlugin(this);
 

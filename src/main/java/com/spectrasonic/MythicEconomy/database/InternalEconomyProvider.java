@@ -9,10 +9,8 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.UUID;
 
-/**
- * Adaptador para el sistema de economía interno existente
- * Implementa la interfaz EconomyDataProvider para mantener compatibilidad
- */
+// Adaptador para el sistema de economía interno existente
+// Implementa la interfaz EconomyDataProvider para mantener compatibilidad
 @RequiredArgsConstructor
 public class InternalEconomyProvider implements EconomyDataProvider {
 

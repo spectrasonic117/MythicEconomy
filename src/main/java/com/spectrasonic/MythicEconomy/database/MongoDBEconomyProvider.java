@@ -12,9 +12,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.UUID;
 
-/**
- * Proveedor de economía que utiliza MongoDB como almacenamiento
- */
+// Proveedor de economía que utiliza MongoDB como almacenamiento
 @RequiredArgsConstructor
 public class MongoDBEconomyProvider implements EconomyDataProvider {
 

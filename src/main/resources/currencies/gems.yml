@@ -1,0 +1,11 @@
+# Configuración de la moneda Gems (sin decimales)
+id: "gems"
+name: "gemas"
+name-singular: "gema"
+symbol: "💎"
+decimal: false
+starting-balance: 10.0
+max-balance: 999999.0
+min-transfer: 1.0
+max-transfer: 10000.0
+enabled: true

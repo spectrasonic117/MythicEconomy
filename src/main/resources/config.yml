@@ -37,6 +37,20 @@ messages:
     money-sent: "<green>Has enviado <yellow>{amount}</yellow> {currency} a <aqua>{player}</aqua>."
     money-received: "<green>Has recibido <yellow>{amount}</yellow> {currency} de <aqua>{player}</aqua>."
 
+# Configuración de múltiples monedas
+multi-currency:
+  # Habilitar sistema de múltiples monedas
+  enabled: true
+
+  # Moneda por defecto del servidor (para compatibilidad hacia atrás)
+  default-currency: "default"
+
+  # Permitir a los jugadores usar comandos de múltiples monedas
+  allow-player-commands: true
+
+  # Directorio donde se almacenan las configuraciones de monedas
+  currencies-directory: "currencies"
+
 # Configuración de base de datos
 database:
   # Tipo de almacenamiento: FILE, MYSQL o MONGODB

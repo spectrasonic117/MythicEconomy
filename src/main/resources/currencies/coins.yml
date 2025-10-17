@@ -1,0 +1,11 @@
+# Configuración de la moneda Coins (moneda premium)
+id: "coins"
+name: "coins"
+name-singular: "coin"
+symbol: "🪙"
+decimal: true
+starting-balance: 50.0
+max-balance: 50000.0
+min-transfer: 0.50
+max-transfer: 5000.0
+enabled: true

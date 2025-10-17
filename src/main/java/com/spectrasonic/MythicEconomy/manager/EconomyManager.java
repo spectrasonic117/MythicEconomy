@@ -13,6 +13,7 @@ import com.spectrasonic.MythicEconomy.database.EconomyDataProvider;
 import com.spectrasonic.MythicEconomy.database.InternalEconomyProvider;
 import com.spectrasonic.MythicEconomy.database.MongoDBConnection;
 import com.spectrasonic.MythicEconomy.database.MongoDBEconomyProvider;
+import com.spectrasonic.MythicEconomy.models.Currency;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,12 +21,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+@SuppressWarnings("unused")
 public class EconomyManager {
 
     private static EconomyManager instance;
     private final JavaPlugin plugin;
     private EconomyDataProvider dataProvider;
     private MongoDBConnection mongoConnection;
+    private CurrencyManager currencyManager;
 
     // Configuración de respaldo para sistema interno
     private final Map<UUID, Double> playerBalances;
@@ -42,6 +45,9 @@ public class EconomyManager {
 
         // Inicializar configuración
         this.loadConfiguration();
+
+        // Inicializar CurrencyManager
+        this.currencyManager = new CurrencyManager(plugin);
 
         // Inicializar proveedor de datos basado en configuración
         this.initializeDataProvider();
@@ -141,111 +147,83 @@ public class EconomyManager {
         }
     }
 
+    // ========== MÉTODOS DE COMPATIBILIDAD HACIA ATRÁS ==========
+    // Estos métodos usan la moneda por defecto para mantener compatibilidad
+
     public double getBalance(Player player) {
-        // Usar el proveedor de datos configurado
-        double balance = dataProvider.getBalance(player.getUniqueId());
-
-        // Si es MongoDB y el jugador no existe, crearlo
-        if (dataProvider instanceof MongoDBEconomyProvider && balance == startingBalance) {
-            dataProvider.createPlayer(player.getUniqueId());
-        }
-
-        return balance;
+        return getBalance(player, "default");
     }
 
     public void setBalance(Player player, double amount) {
-        if (amount < 0) {
-            amount = 0;
-        }
-
-        dataProvider.setBalance(player.getUniqueId(), amount);
+        setBalance(player, amount, "default");
     }
 
     public boolean addMoney(Player player, double amount) {
-        if (amount <= 0) {
-            return false;
-        }
-        double currentBalance = getBalance(player);
-        double newBalance = currentBalance + amount;
-
-        // Disparar evento
-        MoneyAddEvent event = new MoneyAddEvent(player, amount, currentBalance, newBalance);
-        Bukkit.getPluginManager().callEvent(event);
-
-        if (event.isCancelled()) {
-            return false;
-        }
-
-        dataProvider.setBalance(player.getUniqueId(), newBalance);
-        return true;
+        return addMoney(player, amount, "default");
     }
 
     public boolean removeMoney(Player player, double amount) {
-        if (amount <= 0) {
-            return false;
-        }
-        double currentBalance = getBalance(player);
-        if (currentBalance < amount) {
-            return false;
-        }
-        double newBalance = currentBalance - amount;
-
-        // Disparar evento
-        MoneyRemoveEvent event = new MoneyRemoveEvent(player, amount, currentBalance, newBalance);
-        Bukkit.getPluginManager().callEvent(event);
-
-        if (event.isCancelled()) {
-            return false;
-        }
-
-        dataProvider.setBalance(player.getUniqueId(), newBalance);
-        return true;
+        return removeMoney(player, amount, "default");
     }
 
     public boolean hasEnoughMoney(Player player, double amount) {
-        return dataProvider.hasEnoughBalance(player.getUniqueId(), amount);
+        return hasEnoughMoney(player, amount, "default");
     }
 
     public String formatMoney(double amount) {
-        return currencySymbol + String.format("%.2f", amount);
+        return formatMoney(amount, "default");
     }
 
-    // Obtiene el símbolo de la moneda
+    // ========== MÉTODOS LEGACY PARA COMPATIBILIDAD ==========
+
+    // Obtiene el símbolo de la moneda (para compatibilidad hacia atrás)
     public String getCurrencySymbol() {
-        return currencySymbol;
+        Currency defaultCurrency = currencyManager.getCurrency("default");
+        return defaultCurrency != null ? defaultCurrency.getSymbol() : "$";
     }
 
-    // Obtiene el nombre de la moneda (plural)
+    // Obtiene el nombre de la moneda (plural) (para compatibilidad hacia atrás)
     public String getCurrencyName() {
-        return currencyName;
+        Currency defaultCurrency = currencyManager.getCurrency("default");
+        return defaultCurrency != null ? defaultCurrency.getName() : "monedas";
     }
 
-    // Obtiene el nombre de la moneda (singular)
+    // Obtiene el nombre de la moneda (singular) (para compatibilidad hacia atrás)
     public String getCurrencyNameSingular() {
-        return currencyNameSingular;
+        Currency defaultCurrency = currencyManager.getCurrency("default");
+        return defaultCurrency != null ? defaultCurrency.getNameSingular() : "moneda";
     }
 
-    // Obtiene el saldo inicial para nuevos jugadores
+    // Obtiene el saldo inicial para nuevos jugadores (para compatibilidad hacia
+    // atrás)
     public double getStartingBalance() {
-        return startingBalance;
+        Currency defaultCurrency = currencyManager.getCurrency("default");
+        return defaultCurrency != null ? defaultCurrency.getStartingBalance() : 100.0;
     }
 
-    // Establece el saldo inicial para nuevos jugadores
+    // Establece el saldo inicial para nuevos jugadores (para compatibilidad hacia
+    // atrás)
     public void setStartingBalance(double amount) {
         this.startingBalance = Math.max(0, amount);
         plugin.getConfig().set("economy.starting-balance", this.startingBalance);
         plugin.saveConfig();
+
+        // También actualizar la moneda por defecto
+        Currency defaultCurrency = currencyManager.getCurrency("default");
+        if (defaultCurrency != null) {
+            defaultCurrency.setStartingBalance(this.startingBalance);
+            currencyManager.saveCurrency(defaultCurrency);
+        }
     }
 
-    // Obtiene el top de jugadores más ricos
+    // Obtiene el top de jugadores más ricos (para compatibilidad hacia atrás)
     public Map<String, Double> getTopBalances(int limit) {
-        // Nota: Esta implementación necesitaría ser mejorada para MongoDB
-        // Por simplicidad, devolveremos una implementación básica usando el
-        // dataProvider
+        // Implementación básica - en el futuro debería usar agregaciones de MongoDB
+        // Para múltiples monedas, esto obtiene el top de la moneda por defecto
         Map<String, Double> topBalances = new java.util.LinkedHashMap<>();
 
-        // Esta es una implementación simplificada
-        // En un escenario real, usarías agregaciones de MongoDB para obtener el top
+        // Por simplicidad, devolver un mapa vacío por ahora
+        // Esta implementación necesitaría acceso a todos los jugadores y sus balances
         return topBalances;
     }
 
@@ -271,6 +249,177 @@ public class EconomyManager {
 
         plugin.getLogger().info("Configuración de economía recargada.");
     }
+
+    // ========== MÉTODOS PARA MÚLTIPLES MONEDAS ==========
+
+    /**
+     * Obtiene el balance de un jugador en una moneda específica
+     */
+    public double getBalance(Player player, String currencyId) {
+        Currency currency = currencyManager.getCurrency(currencyId);
+        if (currency == null || !currency.isEnabled()) {
+            return 0.0;
+        }
+
+        // Por ahora, usar solo la moneda por defecto hasta que los proveedores soporten
+        // múltiples monedas
+        if (!currencyId.equals("default")) {
+            return currency.getStartingBalance();
+        }
+
+        // Usar el proveedor de datos configurado para moneda por defecto
+        double balance = dataProvider.getBalance(player.getUniqueId());
+
+        // Si es MongoDB y el jugador no existe, crearlo
+        if (dataProvider instanceof MongoDBEconomyProvider && balance == currency.getStartingBalance()) {
+            dataProvider.createPlayer(player.getUniqueId());
+        }
+
+        return balance;
+    }
+
+    /**
+     * Establece el balance de un jugador en una moneda específica
+     */
+    public void setBalance(Player player, double amount, String currencyId) {
+        Currency currency = currencyManager.getCurrency(currencyId);
+        if (currency == null || !currency.isEnabled()) {
+            return;
+        }
+
+        if (amount < 0) {
+            amount = 0;
+        }
+
+        if (!currency.isValidAmount(amount)) {
+            amount = currency.getMaxBalance();
+        }
+
+        // Por ahora, solo funciona con moneda por defecto hasta que los proveedores
+        // soporten múltiples monedas
+        if (currencyId.equals("default")) {
+            dataProvider.setBalance(player.getUniqueId(), amount);
+        }
+    }
+
+    /**
+     * Agrega dinero al balance de un jugador en una moneda específica
+     */
+    public boolean addMoney(Player player, double amount, String currencyId) {
+        Currency currency = currencyManager.getCurrency(currencyId);
+        if (currency == null || !currency.isEnabled()) {
+            return false;
+        }
+
+        if (amount <= 0 || !currency.isValidTransferAmount(amount)) {
+            return false;
+        }
+
+        double currentBalance = getBalance(player, currencyId);
+        double newBalance = currentBalance + amount;
+
+        if (!currency.isValidAmount(newBalance)) {
+            return false;
+        }
+
+        // Disparar evento
+        MoneyAddEvent event = new MoneyAddEvent(player, amount, currentBalance, newBalance);
+        Bukkit.getPluginManager().callEvent(event);
+
+        if (event.isCancelled()) {
+            return false;
+        }
+
+        // Por ahora, solo funciona con moneda por defecto hasta que los proveedores
+        // soporten múltiples monedas
+        if (currencyId.equals("default")) {
+            dataProvider.setBalance(player.getUniqueId(), newBalance);
+        }
+        return true;
+    }
+
+    /**
+     * Quita dinero del balance de un jugador en una moneda específica
+     */
+    public boolean removeMoney(Player player, double amount, String currencyId) {
+        Currency currency = currencyManager.getCurrency(currencyId);
+        if (currency == null || !currency.isEnabled()) {
+            return false;
+        }
+
+        if (amount <= 0 || !currency.isValidTransferAmount(amount)) {
+            return false;
+        }
+
+        double currentBalance = getBalance(player, currencyId);
+        if (currentBalance < amount) {
+            return false;
+        }
+
+        double newBalance = currentBalance - amount;
+
+        // Disparar evento
+        MoneyRemoveEvent event = new MoneyRemoveEvent(player, amount, currentBalance, newBalance);
+        Bukkit.getPluginManager().callEvent(event);
+
+        if (event.isCancelled()) {
+            return false;
+        }
+
+        // Por ahora, solo funciona con moneda por defecto hasta que los proveedores
+        // soporten múltiples monedas
+        if (currencyId.equals("default")) {
+            dataProvider.setBalance(player.getUniqueId(), newBalance);
+        }
+        return true;
+    }
+
+    /**
+     * Verifica si un jugador tiene suficiente dinero en una moneda específica
+     */
+    public boolean hasEnoughMoney(Player player, double amount, String currencyId) {
+        Currency currency = currencyManager.getCurrency(currencyId);
+        if (currency == null || !currency.isEnabled()) {
+            return false;
+        }
+
+        // Por ahora, solo funciona con moneda por defecto hasta que los proveedores
+        // soporten múltiples monedas
+        if (!currencyId.equals("default")) {
+            return getBalance(player, currencyId) >= amount;
+        }
+
+        return dataProvider.hasEnoughBalance(player.getUniqueId(), amount);
+    }
+
+    /**
+     * Formatea una cantidad de dinero según la moneda especificada
+     */
+    public String formatMoney(double amount, String currencyId) {
+        Currency currency = currencyManager.getCurrency(currencyId);
+        if (currency == null) {
+            // Fallback para moneda desconocida
+            return "$" + String.format("%.2f", amount);
+        }
+
+        return currency.formatMoney(amount);
+    }
+
+    /**
+     * Obtiene una moneda por su ID
+     */
+    public Currency getCurrency(String currencyId) {
+        return currencyManager.getCurrency(currencyId);
+    }
+
+    /**
+     * Obtiene el CurrencyManager
+     */
+    public CurrencyManager getCurrencyManager() {
+        return currencyManager;
+    }
+
+    // ========== MÉTODOS EXISTENTES (ACTUALIZADOS) ==========
 
     // Obtiene el proveedor de datos actual
     public EconomyDataProvider getDataProvider() {
