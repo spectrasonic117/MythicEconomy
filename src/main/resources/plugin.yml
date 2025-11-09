@@ -1,7 +1,8 @@
 name: MythicEconomy
-version: '${version}'
+api: "1.21"
+version: "${version}"
 main: com.spectrasonic.MythicEconomy.Main
-api-version: '1.21'
+api-version: "1.21"
 authors: [Spectrasonic]
 description: "Sistema de economía completo para servidores de Minecraft con API para desarrolladores"
 website: https://github.com/spectrasonic
@@ -9,45 +10,27 @@ depend: ["Vault", "PlaceholderAPI"]
 
 # API Information for other plugins
 provides:
-  - MythicEconomyAPI
-
+    - MythicEconomyAPI
 
 commands:
-  economy:
-    permission: MythicEconomy.economy.admin
-    aliases: [eco, econ]
-  
-  money:
-    permission: MythicEconomy.money
-    aliases: [balance, bal]
-  
-  pay:
-    permission: MythicEconomy.pay
-    aliases: [send]
+    economy:
+        permission: MythicEconomy.economy.admin
+        aliases: [eco, econ]
 
 permissions:
-  MythicEconomy.*:
-    description: "Acceso completo a MythicEconomy"
-    default: op
-    children:
-      MythicEconomy.economy.admin:
+    MythicEconomy.economy.admin:
         default: op
-      MythicEconomy.money:
+    MythicEconomy.economy.give:
+        default: op
+    MythicEconomy.economy.take:
+        default: op
+    MythicEconomy.economy.set:
+        default: op
+    MythicEconomy.economy.balance.others:
+        default: op
+    MythicEconomy.economy.reload:
+        default: op
+    MythicEconomy.money:
         default: true
-      MythicEconomy.pay:
+    MythicEconomy.pay:
         default: true
-  
-  MythicEconomy.economy.admin:
-    description: "Permite usar todos los comandos de administración"
-    default: op
-    children:
-      MythicEconomy.economy.give:
-        default: op
-      MythicEconomy.economy.take:
-        default: op
-      MythicEconomy.economy.set:
-        default: op
-      MythicEconomy.economy.balance.others:
-        default: op
-      MythicEconomy.economy.reload:
-        default: op

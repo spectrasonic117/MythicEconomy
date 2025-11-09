@@ -1,4 +1,4 @@
-package com.spectrasonic.Utils;
+package com.spectrasonic.MythicEconomy.utils;
 
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Material;

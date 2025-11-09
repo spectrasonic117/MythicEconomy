@@ -1,16 +1,19 @@
 package com.spectrasonic.MythicEconomy.database;
 
-import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.spectrasonic.MythicEconomy.manager.EconomyManager;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.UUID;
+import java.util.Map;
+import java.io.IOException;
 
 // Adaptador para el sistema de economía interno existente
 // Implementa la interfaz EconomyDataProvider para mantener compatibilidad
+@Getter
 @RequiredArgsConstructor
 public class InternalEconomyProvider implements EconomyDataProvider {
 
@@ -19,75 +22,68 @@ public class InternalEconomyProvider implements EconomyDataProvider {
 
     @Override
     public double getBalance(UUID playerUUID) {
-        Player player = plugin.getServer().getPlayer(playerUUID);
-        if (player != null) {
-            return economyManager.getBalance(player);
-        }
-        return 0.0;
+        return economyManager.playerBalances.getOrDefault(playerUUID, economyManager.startingBalance);
     }
 
     @Override
     public void setBalance(UUID playerUUID, double amount) {
-        Player player = plugin.getServer().getPlayer(playerUUID);
-        if (player != null) {
-            economyManager.setBalance(player, amount);
-        }
+        economyManager.playerBalances.put(playerUUID, amount);
     }
 
     @Override
     public boolean addBalance(UUID playerUUID, double amount) {
-        Player player = plugin.getServer().getPlayer(playerUUID);
-        if (player != null) {
-            return economyManager.addMoney(player, amount);
-        }
-        return false;
+        double currentBalance = economyManager.playerBalances.getOrDefault(playerUUID, economyManager.startingBalance);
+        economyManager.playerBalances.put(playerUUID, currentBalance + amount);
+        return true;
     }
 
     @Override
     public boolean removeBalance(UUID playerUUID, double amount) {
-        Player player = plugin.getServer().getPlayer(playerUUID);
-        if (player != null) {
-            return economyManager.removeMoney(player, amount);
+        double currentBalance = economyManager.playerBalances.getOrDefault(playerUUID, economyManager.startingBalance);
+        if (currentBalance >= amount) {
+            economyManager.playerBalances.put(playerUUID, currentBalance - amount);
+            return true;
         }
         return false;
     }
 
     @Override
     public boolean hasEnoughBalance(UUID playerUUID, double amount) {
-        Player player = plugin.getServer().getPlayer(playerUUID);
-        if (player != null) {
-            return economyManager.hasEnoughMoney(player, amount);
-        }
-        return false;
+        double currentBalance = economyManager.playerBalances.getOrDefault(playerUUID, economyManager.startingBalance);
+        return currentBalance >= amount;
     }
 
     @Override
     public void createPlayer(UUID playerUUID) {
-        Player player = plugin.getServer().getPlayer(playerUUID);
-        if (player != null) {
-            // El sistema interno ya maneja la creación automática de jugadores
-            // Solo necesitamos asegurar que tenga el saldo inicial
-            double currentBalance = getBalance(playerUUID);
-            if (currentBalance == 0) {
-                double startingBalance = plugin.getConfig().getDouble("economy.starting-balance", 100.0);
-                setBalance(playerUUID, startingBalance);
-            }
+        if (!economyManager.playerBalances.containsKey(playerUUID)) {
+            economyManager.playerBalances.put(playerUUID, economyManager.startingBalance);
         }
     }
 
     @Override
     public long getTotalPlayers() {
-        return economyManager.getTotalAccounts();
+        return economyManager.playerBalances.size();
     }
 
     @Override
     public double getTotalMoney() {
-        return economyManager.getTotalMoney();
+        return economyManager.playerBalances.values().stream().mapToDouble(Double::doubleValue).sum();
     }
 
     @Override
     public void save() {
-        economyManager.savePlayerData();
+        // Guardar directamente en el archivo sin llamar a savePlayerData para evitar recursión
+        for (Map.Entry<UUID, Double> entry : economyManager.playerBalances.entrySet()) {
+            String uuidString = entry.getKey().toString();
+            economyManager.dataConfig.set("players." + uuidString + ".balance", entry.getValue());
+        }
+
+        try {
+            economyManager.dataConfig.save(economyManager.dataFile);
+        } catch (IOException e) {
+            economyManager.plugin.getLogger().severe("Could not save playerdata.yml file!");
+            e.printStackTrace();
+        }
     }
 
     @Override

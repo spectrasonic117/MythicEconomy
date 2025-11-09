@@ -1,4 +1,4 @@
-package com.spectrasonic.Utils;
+package com.spectrasonic.MythicEconomy.utils;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;

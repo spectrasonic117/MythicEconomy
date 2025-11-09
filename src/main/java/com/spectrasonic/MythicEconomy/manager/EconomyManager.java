@@ -6,7 +6,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.Bukkit;
 
-import com.spectrasonic.Utils.MessageUtils;
+import com.spectrasonic.MythicEconomy.utils.MessageUtils;
 import com.spectrasonic.MythicEconomy.api.events.MoneyAddEvent;
 import com.spectrasonic.MythicEconomy.api.events.MoneyRemoveEvent;
 import com.spectrasonic.MythicEconomy.database.EconomyDataProvider;
@@ -25,16 +25,16 @@ import java.util.UUID;
 public class EconomyManager {
 
     private static EconomyManager instance;
-    private final JavaPlugin plugin;
+    public final JavaPlugin plugin;
     private EconomyDataProvider dataProvider;
     private MongoDBConnection mongoConnection;
     private CurrencyManager currencyManager;
 
     // Configuración de respaldo para sistema interno
-    private final Map<UUID, Double> playerBalances;
-    private File dataFile;
-    private FileConfiguration dataConfig;
-    private double startingBalance;
+    public final Map<UUID, Double> playerBalances;
+    public File dataFile;
+    public FileConfiguration dataConfig;
+    public double startingBalance;
     private String currencySymbol;
     private String currencyName;
     private String currencyNameSingular;

@@ -10,7 +10,7 @@ import org.bson.Document;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import com.spectrasonic.Utils.MessageUtils;
+import com.spectrasonic.MythicEconomy.utils.MessageUtils;
 import lombok.Getter;
 
 import java.util.concurrent.TimeUnit;

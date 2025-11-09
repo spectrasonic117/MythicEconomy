@@ -5,7 +5,7 @@ import dev.jorel.commandapi.arguments.DoubleArgument;
 import dev.jorel.commandapi.arguments.PlayerArgument;
 import org.bukkit.entity.Player;
 import com.spectrasonic.MythicEconomy.manager.EconomyManager;
-import com.spectrasonic.Utils.MessageUtils;
+import com.spectrasonic.MythicEconomy.utils.MessageUtils;
 
 public class EconomyCommand {
 
@@ -141,7 +141,7 @@ public class EconomyCommand {
                                 .executes((sender, args) -> {
                                     EconomyManager economyManager = EconomyManager.getInstance();
                                     economyManager.reloadConfig();
-                                    economyManager.savePlayerData();
+                                    // No llamar savePlayerData aquí para evitar recursión infinita
                                     MessageUtils.sendMessage(sender,
                                             "<green>Configuración y datos de economía recargados correctamente.");
                                 }),

@@ -3,7 +3,7 @@ package com.spectrasonic.MythicEconomy.commands;
 import com.spectrasonic.MythicEconomy.manager.CurrencyManager;
 import com.spectrasonic.MythicEconomy.manager.EconomyManager;
 import com.spectrasonic.MythicEconomy.models.Currency;
-import com.spectrasonic.Utils.MessageUtils;
+import com.spectrasonic.MythicEconomy.utils.MessageUtils;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.arguments.PlayerArgument;
 import dev.jorel.commandapi.arguments.StringArgument;

@@ -1,25 +1,28 @@
 package com.spectrasonic.MythicEconomy;
 
-import com.spectrasonic.MythicEconomy.commands.EconomyCommand;
-import com.spectrasonic.MythicEconomy.commands.MoneyCommand;
-import com.spectrasonic.MythicEconomy.commands.PayCommand;
-import com.spectrasonic.MythicEconomy.commands.CurrencyCommand;
-import com.spectrasonic.MythicEconomy.commands.BalanceCurrencyCommand;
 import com.spectrasonic.MythicEconomy.manager.EconomyManager;
+import com.spectrasonic.MythicEconomy.managers.CommandManager;
+import com.spectrasonic.MythicEconomy.managers.EventManager;
+import com.spectrasonic.MythicEconomy.managers.ConfigManager;
 import com.spectrasonic.MythicEconomy.providers.VaultEconomyProvider;
 import com.spectrasonic.MythicEconomy.placeholders.MythicEconomyPlaceholders;
-import com.spectrasonic.Utils.CommandUtils;
-import com.spectrasonic.Utils.MessageUtils;
+import com.spectrasonic.MythicEconomy.utils.CommandUtils;
+import com.spectrasonic.MythicEconomy.utils.MessageUtils;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.ServicePriority;
 import net.milkbowl.vault.economy.Economy;
 
 import dev.jorel.commandapi.CommandAPI;
 import dev.jorel.commandapi.CommandAPIBukkitConfig;
+import lombok.Getter;
 
+@Getter
 public final class Main extends JavaPlugin {
 
     private EconomyManager economyManager;
+    private CommandManager commandManager;
+    private EventManager eventManager;
+    private ConfigManager configManager;
     private VaultEconomyProvider vaultEconomyProvider;
     private MythicEconomyPlaceholders placeholders;
     private boolean vaultEnabled = false;
@@ -32,19 +35,19 @@ public final class Main extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        saveDefaultConfig();
         CommandAPI.onEnable();
 
         this.economyManager = new EconomyManager(this);
+        this.commandManager = new CommandManager(this);
+        this.eventManager = new EventManager(this);
+        this.configManager = new ConfigManager(this);
 
         this.setupVault();
 
         this.setupPlaceholderAPI();
 
-        new EconomyCommand().register();
-        new MoneyCommand().register();
-        new PayCommand().register();
-        new CurrencyCommand().register();
-        new BalanceCurrencyCommand().register();
+        commandManager.registerCommands();
 
         CommandUtils.setPlugin(this);
 
@@ -74,7 +77,8 @@ public final class Main extends JavaPlugin {
 
         // Guardar datos antes de cerrar
         if (economyManager != null) {
-            economyManager.savePlayerData();
+            // Guardar directamente sin llamar a savePlayerData para evitar recursión
+            economyManager.getDataProvider().save();
             MessageUtils.sendConsoleMessage("<yellow>Datos de economía guardados correctamente.</yellow>");
         }
 

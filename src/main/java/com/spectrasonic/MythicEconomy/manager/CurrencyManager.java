@@ -1,7 +1,7 @@
 package com.spectrasonic.MythicEconomy.manager;
 
 import com.spectrasonic.MythicEconomy.models.Currency;
-import com.spectrasonic.Utils.MessageUtils;
+import com.spectrasonic.MythicEconomy.utils.MessageUtils;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;

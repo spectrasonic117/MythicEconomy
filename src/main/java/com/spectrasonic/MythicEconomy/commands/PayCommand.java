@@ -5,7 +5,7 @@ import dev.jorel.commandapi.arguments.IntegerArgument;
 import dev.jorel.commandapi.arguments.PlayerArgument;
 import org.bukkit.entity.Player;
 import com.spectrasonic.MythicEconomy.manager.EconomyManager;
-import com.spectrasonic.Utils.MessageUtils;
+import com.spectrasonic.MythicEconomy.utils.MessageUtils;
 
 public class PayCommand {
     public void register() {
