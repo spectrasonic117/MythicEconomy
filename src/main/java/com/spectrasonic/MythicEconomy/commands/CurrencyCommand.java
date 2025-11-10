@@ -205,13 +205,15 @@ public class CurrencyCommand {
         CurrencyManager currencyManager = CurrencyManager.getInstance();
         currencyManager.reloadCurrencies();
 
-        MessageUtils.sendMessage(sender, "<green>Monedas recargadas correctamente.");
+        // Actualizar sugerencias de comandos después del reload
+        // Nota: Las sugerencias se actualizan dinámicamente en getCurrencySuggestions()
+
+        MessageUtils.sendMessage(sender, "<green>Monedas recargadas correctamente. Las nuevas monedas ahora están disponibles en los comandos.");
     }
 
     private String[] getCurrencySuggestions() {
         CurrencyManager currencyManager = CurrencyManager.getInstance();
-        return currencyManager.getEnabledCurrencies().stream()
-                .map(Currency::getId)
+        return currencyManager.getCurrencyIds().stream()
                 .toArray(String[]::new);
     }
 

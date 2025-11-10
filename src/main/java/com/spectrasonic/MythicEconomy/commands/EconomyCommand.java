@@ -1,10 +1,14 @@
 package com.spectrasonic.MythicEconomy.commands;
 
 import dev.jorel.commandapi.CommandAPICommand;
+import dev.jorel.commandapi.arguments.ArgumentSuggestions;
 import dev.jorel.commandapi.arguments.DoubleArgument;
 import dev.jorel.commandapi.arguments.PlayerArgument;
+import dev.jorel.commandapi.arguments.StringArgument;
 import org.bukkit.entity.Player;
+import com.spectrasonic.MythicEconomy.manager.CurrencyManager;
 import com.spectrasonic.MythicEconomy.manager.EconomyManager;
+import com.spectrasonic.MythicEconomy.models.Currency;
 import com.spectrasonic.MythicEconomy.utils.MessageUtils;
 
 public class EconomyCommand {
@@ -15,11 +19,12 @@ public class EconomyCommand {
                 .withAliases("eco", "econ", "meco", "mythiceco", "me")
                 .withPermission("MythicEconomy.economy.admin")
                 .withSubcommands(
-                        // /economy give <player> <amount>
+                        // /economy give <player> <amount> [currency]
                         new CommandAPICommand("give")
                                 .withArguments(
                                         new PlayerArgument("player"),
-                                        new DoubleArgument("amount", 0.01))
+                                        new DoubleArgument("amount", 0.01),
+                                        new StringArgument("currency").setOptional(true).replaceSuggestions(ArgumentSuggestions.strings(getCurrencySuggestions())))
                                 .executes((sender, args) -> {
                                     Player target = (Player) args.get("player");
                                     if (target == null) {
@@ -32,27 +37,39 @@ public class EconomyCommand {
                                         return;
                                     }
                                     double amount = (double) amountObj;
+                                    String currencyId = (String) args.get("currency");
+                                    if (currencyId == null) {
+                                        currencyId = "default";
+                                    }
 
                                     EconomyManager economyManager = EconomyManager.getInstance();
-                                    if (economyManager.addMoney(target, amount)) {
+                                    CurrencyManager currencyManager = CurrencyManager.getInstance();
+                                    Currency currency = currencyManager.getCurrency(currencyId);
+                                    if (currency == null || !currency.isEnabled()) {
+                                        MessageUtils.sendMessage(sender, "<red>Moneda no encontrada o deshabilitada: " + currencyId);
+                                        return;
+                                    }
+
+                                    if (economyManager.addMoney(target, amount, currencyId)) {
                                         MessageUtils.sendMessage(sender,
-                                                "<green>Se han dado <yellow>" + economyManager.formatMoney(amount) +
-                                                        "</yellow> monedas a <aqua>" + target.getName() + "</aqua>.");
+                                                "<green>Se han dado <yellow>" + currency.formatMoney(amount) +
+                                                        "</yellow> a <aqua>" + target.getName() + "</aqua>.");
                                         MessageUtils.sendMessage(target,
-                                                "<green>Has recibido <yellow>" + economyManager.formatMoney(amount) +
-                                                        "</yellow> monedas. Nuevo saldo: <yellow>" +
-                                                        economyManager.formatMoney(economyManager.getBalance(target))
+                                                "<green>Has recibido <yellow>" + currency.formatMoney(amount) +
+                                                        "</yellow>. Nuevo saldo: <yellow>" +
+                                                        currency.formatMoney(economyManager.getBalance(target, currencyId))
                                                         + "</yellow>");
                                     } else {
                                         MessageUtils.sendMessage(sender, "<red>Error: La cantidad debe ser mayor a 0.");
                                     }
                                 }),
 
-                        // /economy take <player> <amount>
+                        // /economy take <player> <amount> [currency]
                         new CommandAPICommand("take")
                                 .withArguments(
                                         new PlayerArgument("player"),
-                                        new DoubleArgument("amount", 0.01))
+                                        new DoubleArgument("amount", 0.01),
+                                        new StringArgument("currency").setOptional(true).replaceSuggestions(ArgumentSuggestions.strings(getCurrencySuggestions())))
                                 .executes((sender, args) -> {
                                     Player target = (Player) args.get("player");
                                     if (target == null) {
@@ -65,32 +82,44 @@ public class EconomyCommand {
                                         return;
                                     }
                                     double amount = (double) amountObj;
+                                    String currencyId = (String) args.get("currency");
+                                    if (currencyId == null) {
+                                        currencyId = "default";
+                                    }
 
                                     EconomyManager economyManager = EconomyManager.getInstance();
-                                    if (economyManager.removeMoney(target, amount)) {
+                                    CurrencyManager currencyManager = CurrencyManager.getInstance();
+                                    Currency currency = currencyManager.getCurrency(currencyId);
+                                    if (currency == null || !currency.isEnabled()) {
+                                        MessageUtils.sendMessage(sender, "<red>Moneda no encontrada o deshabilitada: " + currencyId);
+                                        return;
+                                    }
+
+                                    if (economyManager.removeMoney(target, amount, currencyId)) {
                                         MessageUtils.sendMessage(sender,
-                                                "<green>Se han quitado <yellow>" + economyManager.formatMoney(amount) +
-                                                        "</yellow> monedas a <aqua>" + target.getName() + "</aqua>.");
+                                                "<green>Se han quitado <yellow>" + currency.formatMoney(amount) +
+                                                        "</yellow> a <aqua>" + target.getName() + "</aqua>.");
                                         MessageUtils.sendMessage(target,
-                                                "<red>Se te han quitado <yellow>" + economyManager.formatMoney(amount) +
-                                                        "</yellow> monedas. Nuevo saldo: <yellow>" +
-                                                        economyManager.formatMoney(economyManager.getBalance(target))
+                                                "<red>Se te han quitado <yellow>" + currency.formatMoney(amount) +
+                                                        "</yellow>. Nuevo saldo: <yellow>" +
+                                                        currency.formatMoney(economyManager.getBalance(target, currencyId))
                                                         + "</yellow>");
                                     } else {
                                         MessageUtils.sendMessage(sender,
                                                 "<red>Error: <aqua>" + target.getName()
                                                         + "</aqua> no tiene suficiente dinero. " +
                                                         "Saldo actual: <yellow>"
-                                                        + economyManager.formatMoney(economyManager.getBalance(target))
+                                                        + currency.formatMoney(economyManager.getBalance(target, currencyId))
                                                         + "</yellow>");
                                     }
                                 }),
 
-                        // /economy set <player> <amount>
+                        // /economy set <player> <amount> [currency]
                         new CommandAPICommand("set")
                                 .withArguments(
                                         new PlayerArgument("player"),
-                                        new DoubleArgument("amount", 0))
+                                        new DoubleArgument("amount", 0),
+                                        new StringArgument("currency").setOptional(true).replaceSuggestions(ArgumentSuggestions.strings(getCurrencySuggestions())))
                                 .executes((sender, args) -> {
                                     Player target = (Player) args.get("player");
                                     if (target == null) {
@@ -103,37 +132,62 @@ public class EconomyCommand {
                                         return;
                                     }
                                     double amount = (double) amountObj;
+                                    String currencyId = (String) args.get("currency");
+                                    if (currencyId == null) {
+                                        currencyId = "default";
+                                    }
 
                                     EconomyManager economyManager = EconomyManager.getInstance();
-                                    double previousBalance = economyManager.getBalance(target);
-                                    economyManager.setBalance(target, amount);
+                                    CurrencyManager currencyManager = CurrencyManager.getInstance();
+                                    Currency currency = currencyManager.getCurrency(currencyId);
+                                    if (currency == null || !currency.isEnabled()) {
+                                        MessageUtils.sendMessage(sender, "<red>Moneda no encontrada o deshabilitada: " + currencyId);
+                                        return;
+                                    }
+
+                                    double previousBalance = economyManager.getBalance(target, currencyId);
+                                    economyManager.setBalance(target, amount, currencyId);
 
                                     MessageUtils.sendMessage(sender,
                                             "<green>El saldo de <aqua>" + target.getName()
                                                     + "</aqua> ha sido establecido a <yellow>" +
-                                                    economyManager.formatMoney(amount) + "</yellow> monedas.");
+                                                    currency.formatMoney(amount) + "</yellow>.");
                                     MessageUtils.sendMessage(target,
                                             "<green>Tu saldo ha sido establecido a <yellow>"
-                                                    + economyManager.formatMoney(amount) +
-                                                    "</yellow> monedas. (Anterior: <gray>"
-                                                    + economyManager.formatMoney(previousBalance) + "</gray>)");
+                                                    + currency.formatMoney(amount) +
+                                                    "</yellow>. (Anterior: <gray>"
+                                                    + currency.formatMoney(previousBalance) + "</gray>)");
                                 }),
 
-                        // /economy balance <player>
+                        // /economy balance <player> [currency]
                         new CommandAPICommand("balance")
-                                .withArguments(new PlayerArgument("player"))
+                                .withArguments(
+                                        new PlayerArgument("player"),
+                                        new StringArgument("currency").setOptional(true).replaceSuggestions(ArgumentSuggestions.strings(getCurrencySuggestions())))
                                 .executes((sender, args) -> {
                                     Player target = (Player) args.get("player");
                                     if (target == null) {
                                         MessageUtils.sendMessage(sender, "<red>Error: Jugador no encontrado.");
                                         return;
                                     }
+                                    String currencyId = (String) args.get("currency");
+                                    if (currencyId == null) {
+                                        currencyId = "default";
+                                    }
+
                                     EconomyManager economyManager = EconomyManager.getInstance();
-                                    double balance = economyManager.getBalance(target);
+                                    CurrencyManager currencyManager = CurrencyManager.getInstance();
+                                    Currency currency = currencyManager.getCurrency(currencyId);
+                                    if (currency == null || !currency.isEnabled()) {
+                                        MessageUtils.sendMessage(sender, "<red>Moneda no encontrada o deshabilitada: " + currencyId);
+                                        return;
+                                    }
+
+                                    double balance = economyManager.getBalance(target, currencyId);
 
                                     MessageUtils.sendMessage(sender,
                                             "<green>Saldo de <aqua>" + target.getName() + "</aqua>: <yellow>" +
-                                                    economyManager.formatMoney(balance) + "</yellow> monedas.");
+                                                    currency.formatMoney(balance) + "</yellow>.");
                                 }),
 
                         // /economy reload
@@ -196,9 +250,11 @@ public class EconomyCommand {
                                     }
                                 }),
 
-                        // /economy setstarting <cantidad>
+                        // /economy setstarting <cantidad> [currency]
                         new CommandAPICommand("setstarting")
-                                .withArguments(new DoubleArgument("amount", 0))
+                                .withArguments(
+                                        new DoubleArgument("amount", 0),
+                                        new StringArgument("currency").setOptional(true).replaceSuggestions(ArgumentSuggestions.strings(getCurrencySuggestions())))
                                 .executes((sender, args) -> {
                                     Object amountObj = args.get("amount");
                                     if (amountObj == null) {
@@ -206,12 +262,30 @@ public class EconomyCommand {
                                         return;
                                     }
                                     double amount = (double) amountObj;
+                                    String currencyId = (String) args.get("currency");
+                                    if (currencyId == null) {
+                                        currencyId = "default";
+                                    }
+
                                     EconomyManager economyManager = EconomyManager.getInstance();
+                                    CurrencyManager currencyManager = CurrencyManager.getInstance();
+                                    Currency currency = currencyManager.getCurrency(currencyId);
+                                    if (currency == null || !currency.isEnabled()) {
+                                        MessageUtils.sendMessage(sender, "<red>Moneda no encontrada o deshabilitada: " + currencyId);
+                                        return;
+                                    }
+
                                     economyManager.setStartingBalance(amount);
                                     MessageUtils.sendMessage(sender, "<green>Saldo inicial establecido a <yellow>" +
-                                            economyManager.formatMoney(amount) + "</yellow> para nuevos jugadores.");
+                                            currency.formatMoney(amount) + "</yellow> para nuevos jugadores.");
                                 }))
                 .register();
+    }
+
+    private String[] getCurrencySuggestions() {
+        CurrencyManager currencyManager = CurrencyManager.getInstance();
+        return currencyManager.getCurrencyIds().stream()
+                .toArray(String[]::new);
     }
 
     /**

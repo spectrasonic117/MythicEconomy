@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.UUID;
 import java.util.Map;
+import java.util.HashMap;
 import java.io.IOException;
 
 // Adaptador para el sistema de economía interno existente
@@ -20,36 +21,70 @@ public class InternalEconomyProvider implements EconomyDataProvider {
     private final JavaPlugin plugin;
     private final EconomyManager economyManager;
 
+    // Mapa para almacenar balances por moneda: currencyId -> (playerUUID -> balance)
+    private final Map<String, Map<UUID, Double>> currencyBalances = new HashMap<>();
+
     @Override
     public double getBalance(UUID playerUUID) {
-        return economyManager.playerBalances.getOrDefault(playerUUID, economyManager.startingBalance);
+        // Para compatibilidad, usa la moneda por defecto
+        return getBalance(playerUUID, "default");
     }
 
     @Override
     public void setBalance(UUID playerUUID, double amount) {
-        economyManager.playerBalances.put(playerUUID, amount);
+        // Para compatibilidad, usa la moneda por defecto
+        setBalance(playerUUID, amount, "default");
     }
 
     @Override
     public boolean addBalance(UUID playerUUID, double amount) {
-        double currentBalance = economyManager.playerBalances.getOrDefault(playerUUID, economyManager.startingBalance);
-        economyManager.playerBalances.put(playerUUID, currentBalance + amount);
-        return true;
+        // Para compatibilidad, usa la moneda por defecto
+        return addBalance(playerUUID, amount, "default");
     }
 
     @Override
     public boolean removeBalance(UUID playerUUID, double amount) {
-        double currentBalance = economyManager.playerBalances.getOrDefault(playerUUID, economyManager.startingBalance);
+        // Para compatibilidad, usa la moneda por defecto
+        return removeBalance(playerUUID, amount, "default");
+    }
+
+    @Override
+    public boolean hasEnoughBalance(UUID playerUUID, double amount) {
+        // Para compatibilidad, usa la moneda por defecto
+        return hasEnoughBalance(playerUUID, amount, "default");
+    }
+
+    // Métodos para múltiples monedas
+    public double getBalance(UUID playerUUID, String currencyId) {
+        Map<UUID, Double> currencyMap = currencyBalances.computeIfAbsent(currencyId, k -> new HashMap<>());
+        return currencyMap.getOrDefault(playerUUID, economyManager.getCurrencyManager().getCurrency(currencyId).getStartingBalance());
+    }
+
+    public void setBalance(UUID playerUUID, double amount, String currencyId) {
+        Map<UUID, Double> currencyMap = currencyBalances.computeIfAbsent(currencyId, k -> new HashMap<>());
+        currencyMap.put(playerUUID, amount);
+    }
+
+    public boolean addBalance(UUID playerUUID, double amount, String currencyId) {
+        Map<UUID, Double> currencyMap = currencyBalances.computeIfAbsent(currencyId, k -> new HashMap<>());
+        double currentBalance = currencyMap.getOrDefault(playerUUID, economyManager.getCurrencyManager().getCurrency(currencyId).getStartingBalance());
+        currencyMap.put(playerUUID, currentBalance + amount);
+        return true;
+    }
+
+    public boolean removeBalance(UUID playerUUID, double amount, String currencyId) {
+        Map<UUID, Double> currencyMap = currencyBalances.computeIfAbsent(currencyId, k -> new HashMap<>());
+        double currentBalance = currencyMap.getOrDefault(playerUUID, economyManager.getCurrencyManager().getCurrency(currencyId).getStartingBalance());
         if (currentBalance >= amount) {
-            economyManager.playerBalances.put(playerUUID, currentBalance - amount);
+            currencyMap.put(playerUUID, currentBalance - amount);
             return true;
         }
         return false;
     }
 
-    @Override
-    public boolean hasEnoughBalance(UUID playerUUID, double amount) {
-        double currentBalance = economyManager.playerBalances.getOrDefault(playerUUID, economyManager.startingBalance);
+    public boolean hasEnoughBalance(UUID playerUUID, double amount, String currencyId) {
+        Map<UUID, Double> currencyMap = currencyBalances.computeIfAbsent(currencyId, k -> new HashMap<>());
+        double currentBalance = currencyMap.getOrDefault(playerUUID, economyManager.getCurrencyManager().getCurrency(currencyId).getStartingBalance());
         return currentBalance >= amount;
     }
 
@@ -62,20 +97,38 @@ public class InternalEconomyProvider implements EconomyDataProvider {
 
     @Override
     public long getTotalPlayers() {
-        return economyManager.playerBalances.size();
+        // Para compatibilidad, cuenta solo la moneda por defecto
+        return getTotalPlayers("default");
     }
 
     @Override
     public double getTotalMoney() {
-        return economyManager.playerBalances.values().stream().mapToDouble(Double::doubleValue).sum();
+        // Para compatibilidad, suma solo la moneda por defecto
+        return getTotalMoney("default");
+    }
+
+    // Métodos para múltiples monedas
+    public long getTotalPlayers(String currencyId) {
+        Map<UUID, Double> currencyMap = currencyBalances.get(currencyId);
+        return currencyMap != null ? currencyMap.size() : 0;
+    }
+
+    public double getTotalMoney(String currencyId) {
+        Map<UUID, Double> currencyMap = currencyBalances.get(currencyId);
+        return currencyMap != null ? currencyMap.values().stream().mapToDouble(Double::doubleValue).sum() : 0.0;
     }
 
     @Override
     public void save() {
-        // Guardar directamente en el archivo sin llamar a savePlayerData para evitar recursión
-        for (Map.Entry<UUID, Double> entry : economyManager.playerBalances.entrySet()) {
-            String uuidString = entry.getKey().toString();
-            economyManager.dataConfig.set("players." + uuidString + ".balance", entry.getValue());
+        // Guardar todas las monedas en el archivo
+        for (Map.Entry<String, Map<UUID, Double>> currencyEntry : currencyBalances.entrySet()) {
+            String currencyId = currencyEntry.getKey();
+            Map<UUID, Double> playerBalances = currencyEntry.getValue();
+
+            for (Map.Entry<UUID, Double> entry : playerBalances.entrySet()) {
+                String uuidString = entry.getKey().toString();
+                economyManager.dataConfig.set("currencies." + currencyId + ".players." + uuidString + ".balance", entry.getValue());
+            }
         }
 
         try {
@@ -88,8 +141,29 @@ public class InternalEconomyProvider implements EconomyDataProvider {
 
     @Override
     public void load() {
-        // El sistema interno carga automáticamente en el constructor
-        // No necesitamos hacer nada aquí
+        // Cargar datos desde el archivo de configuración
+        if (economyManager.dataConfig.getConfigurationSection("currencies") != null) {
+            for (String currencyId : economyManager.dataConfig.getConfigurationSection("currencies").getKeys(false)) {
+                if (economyManager.dataConfig.getConfigurationSection("currencies." + currencyId + ".players") != null) {
+                    Map<UUID, Double> currencyMap = currencyBalances.computeIfAbsent(currencyId, k -> new HashMap<>());
+                    for (String uuidString : economyManager.dataConfig.getConfigurationSection("currencies." + currencyId + ".players").getKeys(false)) {
+                        UUID uuid = UUID.fromString(uuidString);
+                        double balance = economyManager.dataConfig.getDouble("currencies." + currencyId + ".players." + uuidString + ".balance", 0.0);
+                        currencyMap.put(uuid, balance);
+                    }
+                }
+            }
+        }
+
+        // Para compatibilidad hacia atrás, cargar también el formato antiguo
+        if (economyManager.dataConfig.getConfigurationSection("players") != null) {
+            Map<UUID, Double> defaultMap = currencyBalances.computeIfAbsent("default", k -> new HashMap<>());
+            for (String uuidString : economyManager.dataConfig.getConfigurationSection("players").getKeys(false)) {
+                UUID uuid = UUID.fromString(uuidString);
+                double balance = economyManager.dataConfig.getDouble("players." + uuidString + ".balance", 0.0);
+                defaultMap.put(uuid, balance);
+            }
+        }
     }
 
     @Override

@@ -56,6 +56,8 @@ public class EconomyManager {
         if (dataProvider instanceof InternalEconomyProvider) {
             this.setupDataFile();
             this.loadPlayerData();
+            // Cargar datos de múltiples monedas
+            dataProvider.load();
         }
 
         instance = this;
@@ -118,6 +120,7 @@ public class EconomyManager {
     }
 
     private void loadPlayerData() {
+        // Para compatibilidad hacia atrás, cargar el formato antiguo
         if (dataConfig.getConfigurationSection("players") != null) {
             for (String uuidString : dataConfig.getConfigurationSection("players").getKeys(false)) {
                 UUID uuid = UUID.fromString(uuidString);
@@ -125,25 +128,18 @@ public class EconomyManager {
                 playerBalances.put(uuid, balance);
             }
         }
+        // La carga de múltiples monedas se hace ahora en InternalEconomyProvider.load()
     }
 
     public void savePlayerData() {
         // Usar el proveedor de datos para guardar
         dataProvider.save();
 
-        // Si es el sistema interno, también guardar el respaldo
+        // Si es el sistema interno, también guardar el respaldo (solo para compatibilidad)
         if (dataProvider instanceof InternalEconomyProvider) {
-            for (Map.Entry<UUID, Double> entry : playerBalances.entrySet()) {
-                String uuidString = entry.getKey().toString();
-                dataConfig.set("players." + uuidString + ".balance", entry.getValue());
-            }
-
-            try {
-                dataConfig.save(dataFile);
-            } catch (IOException e) {
-                plugin.getLogger().severe("Could not save playerdata.yml file!");
-                e.printStackTrace();
-            }
+            // El InternalEconomyProvider ya maneja el guardado de múltiples monedas
+            // Solo mantener compatibilidad con el formato antiguo si es necesario
+            // (El código de guardado está ahora en InternalEconomyProvider.save())
         }
     }
 
@@ -261,18 +257,24 @@ public class EconomyManager {
             return 0.0;
         }
 
-        // Por ahora, usar solo la moneda por defecto hasta que los proveedores soporten
-        // múltiples monedas
-        if (!currencyId.equals("default")) {
-            return currency.getStartingBalance();
+        // Usar el proveedor de datos configurado con soporte para múltiples monedas
+        double balance;
+        if (dataProvider instanceof InternalEconomyProvider) {
+            balance = ((InternalEconomyProvider) dataProvider).getBalance(player.getUniqueId(), currencyId);
+        } else if (dataProvider instanceof MongoDBEconomyProvider) {
+            balance = ((MongoDBEconomyProvider) dataProvider).getBalance(player.getUniqueId(), currencyId);
+        } else {
+            // Fallback para otros proveedores
+            balance = dataProvider.getBalance(player.getUniqueId());
         }
-
-        // Usar el proveedor de datos configurado para moneda por defecto
-        double balance = dataProvider.getBalance(player.getUniqueId());
 
         // Si es MongoDB y el jugador no existe, crearlo
         if (dataProvider instanceof MongoDBEconomyProvider && balance == currency.getStartingBalance()) {
-            dataProvider.createPlayer(player.getUniqueId());
+            if (dataProvider instanceof MongoDBEconomyProvider) {
+                ((MongoDBEconomyProvider) dataProvider).createPlayer(player.getUniqueId(), currencyId);
+            } else {
+                dataProvider.createPlayer(player.getUniqueId());
+            }
         }
 
         return balance;
@@ -295,10 +297,16 @@ public class EconomyManager {
             amount = currency.getMaxBalance();
         }
 
-        // Por ahora, solo funciona con moneda por defecto hasta que los proveedores
-        // soporten múltiples monedas
-        if (currencyId.equals("default")) {
-            dataProvider.setBalance(player.getUniqueId(), amount);
+        // Usar el proveedor de datos configurado con soporte para múltiples monedas
+        if (dataProvider instanceof InternalEconomyProvider) {
+            ((InternalEconomyProvider) dataProvider).setBalance(player.getUniqueId(), amount, currencyId);
+        } else if (dataProvider instanceof MongoDBEconomyProvider) {
+            ((MongoDBEconomyProvider) dataProvider).setBalance(player.getUniqueId(), amount, currencyId);
+        } else {
+            // Fallback para otros proveedores - solo funciona con default
+            if (currencyId.equals("default")) {
+                dataProvider.setBalance(player.getUniqueId(), amount);
+            }
         }
     }
 
@@ -330,12 +338,18 @@ public class EconomyManager {
             return false;
         }
 
-        // Por ahora, solo funciona con moneda por defecto hasta que los proveedores
-        // soporten múltiples monedas
-        if (currencyId.equals("default")) {
-            dataProvider.setBalance(player.getUniqueId(), newBalance);
+        // Usar el proveedor de datos configurado con soporte para múltiples monedas
+        if (dataProvider instanceof InternalEconomyProvider) {
+            return ((InternalEconomyProvider) dataProvider).addBalance(player.getUniqueId(), amount, currencyId);
+        } else if (dataProvider instanceof MongoDBEconomyProvider) {
+            return ((MongoDBEconomyProvider) dataProvider).addBalance(player.getUniqueId(), amount, currencyId);
+        } else {
+            // Fallback para otros proveedores - solo funciona con default
+            if (currencyId.equals("default")) {
+                return dataProvider.addBalance(player.getUniqueId(), amount);
+            }
+            return false;
         }
-        return true;
     }
 
     /**
@@ -366,12 +380,18 @@ public class EconomyManager {
             return false;
         }
 
-        // Por ahora, solo funciona con moneda por defecto hasta que los proveedores
-        // soporten múltiples monedas
-        if (currencyId.equals("default")) {
-            dataProvider.setBalance(player.getUniqueId(), newBalance);
+        // Usar el proveedor de datos configurado con soporte para múltiples monedas
+        if (dataProvider instanceof InternalEconomyProvider) {
+            return ((InternalEconomyProvider) dataProvider).removeBalance(player.getUniqueId(), amount, currencyId);
+        } else if (dataProvider instanceof MongoDBEconomyProvider) {
+            return ((MongoDBEconomyProvider) dataProvider).removeBalance(player.getUniqueId(), amount, currencyId);
+        } else {
+            // Fallback para otros proveedores - solo funciona con default
+            if (currencyId.equals("default")) {
+                return dataProvider.removeBalance(player.getUniqueId(), amount);
+            }
+            return false;
         }
-        return true;
     }
 
     /**
@@ -383,13 +403,18 @@ public class EconomyManager {
             return false;
         }
 
-        // Por ahora, solo funciona con moneda por defecto hasta que los proveedores
-        // soporten múltiples monedas
-        if (!currencyId.equals("default")) {
-            return getBalance(player, currencyId) >= amount;
+        // Usar el proveedor de datos configurado con soporte para múltiples monedas
+        if (dataProvider instanceof InternalEconomyProvider) {
+            return ((InternalEconomyProvider) dataProvider).hasEnoughBalance(player.getUniqueId(), amount, currencyId);
+        } else if (dataProvider instanceof MongoDBEconomyProvider) {
+            return ((MongoDBEconomyProvider) dataProvider).hasEnoughBalance(player.getUniqueId(), amount, currencyId);
+        } else {
+            // Fallback para otros proveedores - solo funciona con default
+            if (currencyId.equals("default")) {
+                return dataProvider.hasEnoughBalance(player.getUniqueId(), amount);
+            }
+            return false;
         }
-
-        return dataProvider.hasEnoughBalance(player.getUniqueId(), amount);
     }
 
     /**
