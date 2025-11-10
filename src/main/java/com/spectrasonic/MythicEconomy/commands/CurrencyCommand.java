@@ -1,9 +1,13 @@
 package com.spectrasonic.MythicEconomy.commands;
 
 import com.spectrasonic.MythicEconomy.manager.CurrencyManager;
+import com.spectrasonic.MythicEconomy.manager.EconomyManager;
 import com.spectrasonic.MythicEconomy.models.Currency;
 import com.spectrasonic.MythicEconomy.utils.MessageUtils;
 import dev.jorel.commandapi.CommandAPICommand;
+import dev.jorel.commandapi.arguments.ArgumentSuggestions;
+import dev.jorel.commandapi.arguments.DoubleArgument;
+import dev.jorel.commandapi.arguments.PlayerArgument;
 import dev.jorel.commandapi.arguments.StringArgument;
 import org.bukkit.entity.Player;
 
@@ -59,6 +63,51 @@ public class CurrencyCommand {
                         new CommandAPICommand("reload")
                                 .executesPlayer((sender, args) -> {
                                     reloadCurrencies(sender);
+                                }),
+
+                        // /currency give <target> <amount> <currency> - Da monedas a un jugador
+                        new CommandAPICommand("give")
+                                .withArguments(
+                                        new PlayerArgument("target"),
+                                        new DoubleArgument("amount", 0.01),
+                                        new StringArgument("currency").replaceSuggestions(ArgumentSuggestions.strings(getCurrencySuggestions())))
+                                .executesPlayer((sender, args) -> {
+                                    Player target = (Player) args.get("target");
+                                    Double amt = (Double) args.get("amount");
+                                    double amount = amt != null ? amt : 0.0;
+                                    String currencyId = (String) args.get("currency");
+
+                                    giveCurrency(sender, target, amount, currencyId);
+                                }),
+
+                        // /currency take <target> <amount> <currency> - Quita monedas a un jugador
+                        new CommandAPICommand("take")
+                                .withArguments(
+                                        new PlayerArgument("target"),
+                                        new DoubleArgument("amount", 0.01),
+                                        new StringArgument("currency").replaceSuggestions(ArgumentSuggestions.strings(getCurrencySuggestions())))
+                                .executesPlayer((sender, args) -> {
+                                    Player target = (Player) args.get("target");
+                                    Double amt = (Double) args.get("amount");
+                                    double amount = amt != null ? amt : 0.0;
+                                    String currencyId = (String) args.get("currency");
+
+                                    takeCurrency(sender, target, amount, currencyId);
+                                }),
+
+                        // /currency set <target> <amount> <currency> - Establece el saldo de un jugador
+                        new CommandAPICommand("set")
+                                .withArguments(
+                                        new PlayerArgument("target"),
+                                        new DoubleArgument("amount", 0),
+                                        new StringArgument("currency").replaceSuggestions(ArgumentSuggestions.strings(getCurrencySuggestions())))
+                                .executesPlayer((sender, args) -> {
+                                    Player target = (Player) args.get("target");
+                                    Double amt = (Double) args.get("amount");
+                                    double amount = amt != null ? amt : 0.0;
+                                    String currencyId = (String) args.get("currency");
+
+                                    setCurrency(sender, target, amount, currencyId);
                                 }))
                 .register();
     }
@@ -157,5 +206,80 @@ public class CurrencyCommand {
         currencyManager.reloadCurrencies();
 
         MessageUtils.sendMessage(sender, "<green>Monedas recargadas correctamente.");
+    }
+
+    private String[] getCurrencySuggestions() {
+        CurrencyManager currencyManager = CurrencyManager.getInstance();
+        return currencyManager.getEnabledCurrencies().stream()
+                .map(Currency::getId)
+                .toArray(String[]::new);
+    }
+
+    private void giveCurrency(Player sender, Player target, double amount, String currencyId) {
+        CurrencyManager currencyManager = CurrencyManager.getInstance();
+        EconomyManager economyManager = EconomyManager.getInstance();
+
+        Currency currency = currencyManager.getCurrency(currencyId);
+        if (currency == null || !currency.isEnabled()) {
+            MessageUtils.sendMessage(sender, "<red>Moneda no encontrada o deshabilitada: " + currencyId);
+            return;
+        }
+
+        if (economyManager.addMoney(target, amount, currencyId)) {
+            MessageUtils.sendMessage(sender,
+                    "<green>Se han dado <yellow>" + currency.formatMoney(amount) + "</yellow> a <aqua>"
+                            + target.getName() + "</aqua>.");
+            MessageUtils.sendMessage(target,
+                    "<green>Has recibido <yellow>" + currency.formatMoney(amount) + "</yellow>. Nuevo saldo: <yellow>" +
+                            currency.formatMoney(economyManager.getBalance(target, currencyId)) + "</yellow>");
+        } else {
+            MessageUtils.sendMessage(sender, "<red>Error al dar monedas.");
+        }
+    }
+
+    private void takeCurrency(Player sender, Player target, double amount, String currencyId) {
+        CurrencyManager currencyManager = CurrencyManager.getInstance();
+        EconomyManager economyManager = EconomyManager.getInstance();
+
+        Currency currency = currencyManager.getCurrency(currencyId);
+        if (currency == null || !currency.isEnabled()) {
+            MessageUtils.sendMessage(sender, "<red>Moneda no encontrada o deshabilitada: " + currencyId);
+            return;
+        }
+
+        if (economyManager.removeMoney(target, amount, currencyId)) {
+            MessageUtils.sendMessage(sender,
+                    "<green>Se han quitado <yellow>" + currency.formatMoney(amount) + "</yellow> a <aqua>"
+                            + target.getName() + "</aqua>.");
+            MessageUtils.sendMessage(target,
+                    "<red>Se te han quitado <yellow>" + currency.formatMoney(amount)
+                            + "</yellow>. Nuevo saldo: <yellow>" +
+                            currency.formatMoney(economyManager.getBalance(target, currencyId)) + "</yellow>");
+        } else {
+            MessageUtils.sendMessage(sender,
+                    "<red><aqua>" + target.getName() + "</aqua> no tiene suficiente dinero. Saldo actual: <yellow>" +
+                            currency.formatMoney(economyManager.getBalance(target, currencyId)) + "</yellow>");
+        }
+    }
+
+    private void setCurrency(Player sender, Player target, double amount, String currencyId) {
+        CurrencyManager currencyManager = CurrencyManager.getInstance();
+        EconomyManager economyManager = EconomyManager.getInstance();
+
+        Currency currency = currencyManager.getCurrency(currencyId);
+        if (currency == null || !currency.isEnabled()) {
+            MessageUtils.sendMessage(sender, "<red>Moneda no encontrada o deshabilitada: " + currencyId);
+            return;
+        }
+
+        double previousBalance = economyManager.getBalance(target, currencyId);
+        economyManager.setBalance(target, amount, currencyId);
+
+        MessageUtils.sendMessage(sender,
+                "<green>El saldo de <aqua>" + target.getName() + "</aqua> ha sido establecido a <yellow>" +
+                        currency.formatMoney(amount) + "</yellow>.");
+        MessageUtils.sendMessage(target,
+                "<green>Tu saldo ha sido establecido a <yellow>" + currency.formatMoney(amount) +
+                        "</yellow>. (Anterior: <gray>" + currency.formatMoney(previousBalance) + "</gray>)");
     }
 }
