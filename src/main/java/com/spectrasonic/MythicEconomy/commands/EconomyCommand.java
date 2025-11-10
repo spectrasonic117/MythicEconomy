@@ -278,6 +278,20 @@ public class EconomyCommand {
                                     economyManager.setStartingBalance(amount);
                                     MessageUtils.sendMessage(sender, "<green>Saldo inicial establecido a <yellow>" +
                                             currency.formatMoney(amount) + "</yellow> para nuevos jugadores.");
+                                }),
+
+                        // /economy list - Lista todas las monedas disponibles
+                        new CommandAPICommand("list")
+                                .executes((sender, args) -> {
+                                    listCurrencies(sender);
+                                }),
+
+                        // /economy info <currency> - Muestra información de una moneda
+                        new CommandAPICommand("info")
+                                .withArguments(new StringArgument("currency").replaceSuggestions(ArgumentSuggestions.strings(getCurrencySuggestions())))
+                                .executes((sender, args) -> {
+                                    String currencyId = (String) args.get("currency");
+                                    showCurrencyInfo(sender, currencyId);
                                 }))
                 .register();
     }
@@ -286,6 +300,54 @@ public class EconomyCommand {
         CurrencyManager currencyManager = CurrencyManager.getInstance();
         return currencyManager.getCurrencyIds().stream()
                 .toArray(String[]::new);
+    }
+
+    private void listCurrencies(org.bukkit.command.CommandSender sender) {
+        CurrencyManager currencyManager = CurrencyManager.getInstance();
+
+        MessageUtils.sendMessage(sender, "<green><bold>=== MONEDAS DISPONIBLES ===</bold></green>");
+
+        for (Currency currency : currencyManager.getEnabledCurrencies()) {
+            String status = currency.isEnabled() ? "<green>Habilitada</green>" : "<red>Deshabilitada</red>";
+            String decimal = currency.isDecimal() ? "<green>Con decimales</green>" : "<red>Sin decimales</red>";
+
+            MessageUtils.sendMessage(sender,
+                    "<yellow>" + currency.getId() + "</yellow> <gray>-</gray> " +
+                            "<aqua>" + currency.getName() + "</aqua> " +
+                            "<gray>(</gray>" + currency.getSymbol() + "<gray>)</gray> " +
+                            "<gray>|</gray> " + status + " <gray>|</gray> " + decimal);
+        }
+
+        MessageUtils.sendMessage(sender,
+                "<gray>Total: " + currencyManager.getEnabledCurrenciesCount() + " monedas habilitadas</gray>");
+    }
+
+    private void showCurrencyInfo(org.bukkit.command.CommandSender sender, String currencyId) {
+        CurrencyManager currencyManager = CurrencyManager.getInstance();
+        Currency currency = currencyManager.getCurrency(currencyId);
+
+        if (currency == null) {
+            MessageUtils.sendMessage(sender, "<red>No existe una moneda con el ID: " + currencyId);
+            return;
+        }
+
+        MessageUtils.sendMessage(sender, "<green><bold>=== INFORMACIÓN DE MONEDA ===</bold></green>");
+        MessageUtils.sendMessage(sender, "<yellow>ID:</yellow> " + currency.getId());
+        MessageUtils.sendMessage(sender, "<yellow>Nombre:</yellow> " + currency.getName());
+        MessageUtils.sendMessage(sender, "<yellow>Nombre Singular:</yellow> " + currency.getNameSingular());
+        MessageUtils.sendMessage(sender, "<yellow>Símbolo:</yellow> " + currency.getSymbol());
+        MessageUtils.sendMessage(sender,
+                "<yellow>Decimal:</yellow> " + (currency.isDecimal() ? "<green>Sí</green>" : "<red>No</red>"));
+        MessageUtils.sendMessage(sender,
+                "<yellow>Saldo Inicial:</yellow> " + currency.formatMoney(currency.getStartingBalance()));
+        MessageUtils.sendMessage(sender,
+                "<yellow>Balance Máximo:</yellow> " + currency.formatMoney(currency.getMaxBalance()));
+        MessageUtils.sendMessage(sender,
+                "<yellow>Transferencia Mínima:</yellow> " + currency.formatMoney(currency.getMinTransfer()));
+        MessageUtils.sendMessage(sender,
+                "<yellow>Transferencia Máxima:</yellow> " + currency.formatMoney(currency.getMaxTransfer()));
+        MessageUtils.sendMessage(sender,
+                "<yellow>Habilitada:</yellow> " + (currency.isEnabled() ? "<green>Sí</green>" : "<red>No</red>"));
     }
 
     /**
