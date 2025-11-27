@@ -7,13 +7,14 @@ import com.spectrasonic.MythicEconomy.manager.EconomyManager;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import java.util.UUID;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.io.IOException;
 
 // Adaptador para el sistema de economía interno existente
 // Implementa la interfaz EconomyDataProvider para mantener compatibilidad
+// Además incluye soporte para nombres de jugadores
 @Getter
 @RequiredArgsConstructor
 public class InternalEconomyProvider implements EconomyDataProvider {
@@ -23,6 +24,9 @@ public class InternalEconomyProvider implements EconomyDataProvider {
 
     // Mapa para almacenar balances por moneda: currencyId -> (playerUUID -> balance)
     private final Map<String, Map<UUID, Double>> currencyBalances = new HashMap<>();
+    
+    // Mapa para almacenar nombres de jugadores: playerUUID -> playerName
+    private final Map<UUID, String> playerNames = new HashMap<>();
 
     @Override
     public double getBalance(UUID playerUUID) {
@@ -214,5 +218,61 @@ public class InternalEconomyProvider implements EconomyDataProvider {
     @Override
     public boolean isAvailable() {
         return economyManager != null;
+    }
+
+    @Override
+    public Object[][] getTopBalancesWithNames(String currencyId, int limit) {
+        Map<UUID, Double> currencyMap = currencyBalances.get(currencyId);
+        if (currencyMap == null || currencyMap.isEmpty()) {
+            return new Object[0][0];
+        }
+
+        return currencyMap.entrySet().stream()
+                .sorted((e1, e2) -> Double.compare(e2.getValue(), e1.getValue()))
+                .limit(limit)
+                .map(entry -> new Object[]{
+                    entry.getKey().toString(), // UUID como String
+                    playerNames.getOrDefault(entry.getKey(), "Unknown"), // Nombre del jugador
+                    entry.getValue() // Balance
+                })
+                .toArray(Object[][]::new);
+    }
+
+    @Override
+    public void updatePlayerName(UUID playerUUID, String playerName) {
+        if (playerName != null && !playerName.trim().isEmpty()) {
+            playerNames.put(playerUUID, playerName);
+        }
+    }
+
+    @Override
+    public String getPlayerName(UUID playerUUID) {
+        return playerNames.get(playerUUID);
+    }
+
+    @Override
+    public Map<UUID, String> getPlayerNames(Iterable<UUID> playerUUIDs) {
+        Map<UUID, String> names = new HashMap<>();
+        
+        for (UUID uuid : playerUUIDs) {
+            String name = playerNames.get(uuid);
+            if (name != null) {
+                names.put(uuid, name);
+            }
+        }
+        
+        return names;
+    }
+
+    @Override
+    public void syncPlayerNames(Map<UUID, String> activePlayers) {
+        for (Map.Entry<UUID, String> entry : activePlayers.entrySet()) {
+            UUID playerUUID = entry.getKey();
+            String playerName = entry.getValue();
+            
+            if (playerName != null && !playerName.trim().isEmpty()) {
+                playerNames.put(playerUUID, playerName);
+            }
+        }
     }
 }

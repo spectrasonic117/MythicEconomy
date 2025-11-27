@@ -221,6 +221,80 @@ public class MythicEconomyPlaceholders extends PlaceholderExpansion {
                     }
                 }
 
+                // ========== PLACEHOLDERS NUEVOS PARA MONEDAS ESPECÍFICAS ==========
+                
+                // Placeholder para obtener nombre del top 1 jugador de una moneda específica: %eco_<currency>_top_1_player%
+                if (params.endsWith("_top_1_player") && params.length() > 14) {
+                    try {
+                        String currencyId = params.substring(0, params.length() - 14);
+                        return getTopPlayerWithUUID(1, currencyId);
+                    } catch (Exception e) {
+                        return "N/A";
+                    }
+                }
+
+                // Placeholder para obtener UUID del top 1 jugador de una moneda específica: %eco_<currency>_top_1_uuid%
+                if (params.endsWith("_top_1_uuid") && params.length() > 13) {
+                    try {
+                        String currencyId = params.substring(0, params.length() - 13);
+                        return getTopPlayerUUID(1, currencyId);
+                    } catch (Exception e) {
+                        return "N/A";
+                    }
+                }
+
+                // Placeholder para obtener dinero del top 1 jugador de una moneda específica: %eco_<currency>_top_1_money%
+                if (params.endsWith("_top_1_money") && params.length() > 13) {
+                    try {
+                        String currencyId = params.substring(0, params.length() - 13);
+                        return getTopMoneyWithUUID(1, currencyId);
+                    } catch (Exception e) {
+                        return "N/A";
+                    }
+                }
+
+                // Placeholder para obtener nombre del top N jugador de una moneda específica: %eco_<currency>_top_<N>_player%
+                if (params.startsWith("top_") && params.contains("_") && params.endsWith("_player")) {
+                    try {
+                        String[] parts = params.split("_");
+                        if (parts.length >= 4) {
+                            String currencyId = params.substring(0, params.lastIndexOf("_top_"));
+                            int position = Integer.parseInt(parts[1]);
+                            return getTopPlayerWithUUID(position, currencyId);
+                        }
+                    } catch (Exception e) {
+                        return "N/A";
+                    }
+                }
+
+                // Placeholder para obtener UUID del top N jugador de una moneda específica: %eco_<currency>_top_<N>_uuid%
+                if (params.startsWith("top_") && params.contains("_") && params.endsWith("_uuid")) {
+                    try {
+                        String[] parts = params.split("_");
+                        if (parts.length >= 4) {
+                            String currencyId = params.substring(0, params.lastIndexOf("_top_"));
+                            int position = Integer.parseInt(parts[1]);
+                            return getTopPlayerUUID(position, currencyId);
+                        }
+                    } catch (Exception e) {
+                        return "N/A";
+                    }
+                }
+
+                // Placeholder para obtener dinero del top N jugador de una moneda específica: %eco_<currency>_top_<N>_money%
+                if (params.startsWith("top_") && params.contains("_") && params.endsWith("_money")) {
+                    try {
+                        String[] parts = params.split("_");
+                        if (parts.length >= 4) {
+                            String currencyId = params.substring(0, params.lastIndexOf("_top_"));
+                            int position = Integer.parseInt(parts[1]);
+                            return getTopMoneyWithUUID(position, currencyId);
+                        }
+                    } catch (Exception e) {
+                        return "N/A";
+                    }
+                }
+
                 // ========== PLACEHOLDERS LEGACY (COMPATIBILIDAD) ==========
 
                 // Placeholder dinámico para verificar si puede pagar:
@@ -311,6 +385,64 @@ public class MythicEconomyPlaceholders extends PlaceholderExpansion {
         if (topBalances.size() >= position) {
             Double amount = topBalances.values().toArray(new Double[0])[position - 1];
             return economyManager.formatMoney(amount);
+        }
+
+        return "N/A";
+    }
+
+    // ========== PLACEHOLDERS ACTUALIZADOS PARA SOPORTE DE NOMBRES ==========
+    
+    // Obtiene el nombre del jugador en la posición especificada del top usando el nuevo sistema de nombres
+    private String getTopPlayerWithUUID(int position, String currencyId) {
+        Object[][] topBalances;
+        
+        if ("default".equals(currencyId)) {
+            topBalances = economyManager.getTopBalancesWithNames(position);
+        } else {
+            topBalances = economyManager.getTopBalancesWithNames(currencyId, position);
+        }
+
+        if (topBalances.length >= position) {
+            // El nuevo formato es [UUID, playerName, balance]
+            String playerName = (String) topBalances[position - 1][1];
+            return playerName != null ? playerName : "Unknown";
+        }
+
+        return "N/A";
+    }
+
+    // Obtiene el UUID del jugador en la posición especificada del top
+    private String getTopPlayerUUID(int position, String currencyId) {
+        Object[][] topBalances;
+        
+        if ("default".equals(currencyId)) {
+            topBalances = economyManager.getTopBalancesWithNames(position);
+        } else {
+            topBalances = economyManager.getTopBalancesWithNames(currencyId, position);
+        }
+
+        if (topBalances.length >= position) {
+            // El nuevo formato es [UUID, playerName, balance]
+            return (String) topBalances[position - 1][0];
+        }
+
+        return "N/A";
+    }
+
+    // Obtiene el dinero del jugador en la posición especificada del top usando el nuevo sistema
+    private String getTopMoneyWithUUID(int position, String currencyId) {
+        Object[][] topBalances;
+        
+        if ("default".equals(currencyId)) {
+            topBalances = economyManager.getTopBalancesWithNames(position);
+        } else {
+            topBalances = economyManager.getTopBalancesWithNames(currencyId, position);
+        }
+
+        if (topBalances.length >= position) {
+            // El nuevo formato es [UUID, playerName, balance]
+            Double amount = (Double) topBalances[position - 1][2];
+            return economyManager.formatMoney(amount, currencyId);
         }
 
         return "N/A";

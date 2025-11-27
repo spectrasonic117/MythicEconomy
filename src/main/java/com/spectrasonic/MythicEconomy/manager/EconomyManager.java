@@ -492,4 +492,110 @@ public class EconomyManager {
     public boolean isUsingMySQL() {
         return dataProvider instanceof MySQLEconomyProvider;
     }
+    // ========== MÉTODOS NUEVOS PARA SOPORTE DE NOMBRES DE JUGADORES ==========
+
+    /**
+     * Actualiza el nombre de un jugador en el proveedor de datos
+     */
+    public void updatePlayerName(UUID playerUUID, String playerName) {
+        if (dataProvider != null) {
+            dataProvider.updatePlayerName(playerUUID, playerName);
+        }
+    }
+
+    /**
+     * Obtiene el nombre de un jugador por su UUID desde el proveedor de datos
+     */
+    public String getPlayerName(UUID playerUUID) {
+        if (dataProvider != null) {
+            return dataProvider.getPlayerName(playerUUID);
+        }
+        return null;
+    }
+
+    /**
+     * Obtiene nombres de jugadores por sus UUIDs desde el proveedor de datos
+     */
+    public Map<UUID, String> getPlayerNames(Iterable<UUID> playerUUIDs) {
+        if (dataProvider != null) {
+            return dataProvider.getPlayerNames(playerUUIDs);
+        }
+        return new java.util.HashMap<>();
+    }
+
+    /**
+     * Sincroniza nombres de jugadores activos con el proveedor de datos
+     */
+    public void syncPlayerNames(Map<UUID, String> activePlayers) {
+        if (dataProvider != null) {
+            dataProvider.syncPlayerNames(activePlayers);
+        }
+    }
+
+    /**
+     * Obtiene el top de balances con nombres para una moneda específica
+     */
+    public Object[][] getTopBalancesWithNames(String currencyId, int limit) {
+        if (dataProvider != null) {
+            return dataProvider.getTopBalancesWithNames(currencyId, limit);
+        }
+        return new Object[0][0];
+    }
+
+    /**
+     * Obtiene el top de balances con nombres usando la moneda por defecto (para compatibilidad)
+     */
+    public Object[][] getTopBalancesWithNames(int limit) {
+        return getTopBalancesWithNames("default", limit);
+    }
+
+    /**
+     * Resuelve el nombre de un jugador usando el API de Bukkit si no está en la base de datos
+     */
+    public String resolvePlayerName(UUID playerUUID) {
+        // Primero intentar obtener de la base de datos
+        String name = getPlayerName(playerUUID);
+        if (name != null && !name.isEmpty()) {
+            return name;
+        }
+
+        // Si no está en la base de datos, intentar obtener del servidor
+        org.bukkit.OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(playerUUID);
+        if (offlinePlayer != null && offlinePlayer.getName() != null) {
+            String playerName = offlinePlayer.getName();
+            // Guardar el nombre en la base de datos para futuras consultas
+            updatePlayerName(playerUUID, playerName);
+            return playerName;
+        }
+
+        return "Unknown";
+    }
+
+    /**
+     * Resuelve nombres de múltiples jugadores usando el API de Bukkit
+     */
+    public Map<UUID, String> resolvePlayerNames(Iterable<UUID> playerUUIDs) {
+        Map<UUID, String> resolvedNames = new java.util.HashMap<>();
+        
+        // Obtener nombres existentes de la base de datos
+        Map<UUID, String> existingNames = getPlayerNames(playerUUIDs);
+        
+        // Para los que no están en la base de datos, intentar resolver del servidor
+        for (UUID uuid : playerUUIDs) {
+            String name = existingNames.get(uuid);
+            if (name == null || name.isEmpty()) {
+                org.bukkit.OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(uuid);
+                if (offlinePlayer != null && offlinePlayer.getName() != null) {
+                    name = offlinePlayer.getName();
+                    // Guardar en la base de datos para futuras consultas
+                    updatePlayerName(uuid, name);
+                } else {
+                    name = "Unknown";
+                }
+            }
+            resolvedNames.put(uuid, name);
+        }
+        
+        return resolvedNames;
+    }
 }

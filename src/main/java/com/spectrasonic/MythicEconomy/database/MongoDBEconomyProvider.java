@@ -10,7 +10,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import lombok.RequiredArgsConstructor;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
+import java.util.ArrayList;
+import java.util.List;
 
 // Proveedor de economía que utiliza MongoDB como almacenamiento
 @RequiredArgsConstructor
@@ -384,6 +388,164 @@ public class MongoDBEconomyProvider implements EconomyDataProvider {
             plugin.getLogger().severe("Error al obtener top balances desde MongoDB: " + e.getMessage());
             e.printStackTrace();
             return new Object[0][0];
+        }
+    }
+
+    @Override
+    public Object[][] getTopBalancesWithNames(String currencyId, int limit) {
+        if (!mongoConnection.isConnected()) {
+            return new Object[0][0];
+        }
+
+        try {
+            MongoCollection<Document> collection = mongoConnection.getCollection();
+            MongoCollection<Document> namesCollection = mongoConnection.getDatabase().getCollection("player_names");
+
+            // Obtener top balances
+            List<Document> results = collection.find(Filters.eq("currencyId", currencyId))
+                    .sort(new Document("balance", -1))
+                    .limit(limit)
+                    .into(new ArrayList<>());
+
+            Object[][] topBalances = new Object[results.size()][3];
+            for (int i = 0; i < results.size(); i++) {
+                Document doc = results.get(i);
+                String uuid = doc.getString("uuid");
+                
+                // Obtener nombre del jugador
+                Document nameDoc = namesCollection.find(Filters.eq("uuid", uuid)).first();
+                String playerName = nameDoc != null ? nameDoc.getString("name") : "Unknown";
+                
+                topBalances[i][0] = uuid; // UUID como String
+                topBalances[i][1] = playerName; // Nombre del jugador
+                topBalances[i][2] = doc.getDouble("balance");
+            }
+
+            return topBalances;
+
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error al obtener top balances con nombres desde MongoDB: " + e.getMessage());
+            e.printStackTrace();
+            return new Object[0][0];
+        }
+    }
+
+    @Override
+    public void updatePlayerName(UUID playerUUID, String playerName) {
+        if (!mongoConnection.isConnected()) {
+            plugin.getLogger().warning("No hay conexión activa con MongoDB");
+            return;
+        }
+
+        if (playerName == null || playerName.trim().isEmpty()) {
+            return;
+        }
+
+        try {
+            MongoCollection<Document> collection = mongoConnection.getCollection("player_names");
+
+            Document nameDoc = new Document()
+                    .append("uuid", playerUUID.toString())
+                    .append("name", playerName)
+                    .append("lastUpdated", System.currentTimeMillis());
+
+            // Usar upsert para crear o actualizar
+            collection.replaceOne(
+                    Filters.eq("uuid", playerUUID.toString()),
+                    nameDoc,
+                    new ReplaceOptions().upsert(true));
+
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error al actualizar nombre de jugador en MongoDB: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public String getPlayerName(UUID playerUUID) {
+        if (!mongoConnection.isConnected()) {
+            return null;
+        }
+
+        try {
+            MongoCollection<Document> collection = mongoConnection.getCollection("player_names");
+            Document nameDoc = collection.find(Filters.eq("uuid", playerUUID.toString())).first();
+            
+            return nameDoc != null ? nameDoc.getString("name") : null;
+
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error al obtener nombre de jugador desde MongoDB: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @Override
+    public Map<UUID, String> getPlayerNames(Iterable<UUID> playerUUIDs) {
+        Map<UUID, String> names = new HashMap<>();
+        
+        if (!mongoConnection.isConnected()) {
+            return names;
+        }
+
+        try {
+            MongoCollection<Document> collection = mongoConnection.getCollection("player_names");
+            
+            List<String> uuidStrings = new ArrayList<>();
+            for (UUID uuid : playerUUIDs) {
+                uuidStrings.add(uuid.toString());
+            }
+
+            if (uuidStrings.isEmpty()) {
+                return names;
+            }
+
+            List<Document> results = collection.find(Filters.in("uuid", uuidStrings))
+                    .into(new ArrayList<>());
+
+            for (Document doc : results) {
+                UUID uuid = UUID.fromString(doc.getString("uuid"));
+                String name = doc.getString("name");
+                names.put(uuid, name);
+            }
+
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error al obtener nombres de jugadores desde MongoDB: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return names;
+    }
+
+    @Override
+    public void syncPlayerNames(Map<UUID, String> activePlayers) {
+        if (!mongoConnection.isConnected()) {
+            return;
+        }
+
+        try {
+            MongoCollection<Document> collection = mongoConnection.getCollection("player_names");
+
+            for (Map.Entry<UUID, String> entry : activePlayers.entrySet()) {
+                UUID playerUUID = entry.getKey();
+                String playerName = entry.getValue();
+                
+                if (playerName != null && !playerName.trim().isEmpty()) {
+                    Document nameDoc = new Document()
+                            .append("uuid", playerUUID.toString())
+                            .append("name", playerName)
+                            .append("lastUpdated", System.currentTimeMillis());
+
+                    collection.replaceOne(
+                            Filters.eq("uuid", playerUUID.toString()),
+                            nameDoc,
+                            new ReplaceOptions().upsert(true));
+                }
+            }
+
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error al sincronizar nombres de jugadores en MongoDB: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

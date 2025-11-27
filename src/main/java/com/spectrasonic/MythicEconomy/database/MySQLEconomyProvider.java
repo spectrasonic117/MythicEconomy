@@ -6,7 +6,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.bukkit.plugin.java.JavaPlugin;
@@ -380,6 +382,171 @@ public class MySQLEconomyProvider implements EconomyDataProvider {
         }
 
         return results.toArray(new Object[0][0]);
+    }
+
+    @Override
+    public Object[][] getTopBalancesWithNames(String currencyId, int limit) {
+        if (!mysqlConnection.isConnected()) {
+            return new Object[0][0];
+        }
+
+        List<Object[]> results = new ArrayList<>();
+
+        try (Connection conn = mysqlConnection.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(
+                        "SELECT pb.player_uuid, pb.balance, pn.player_name FROM player_balances pb " +
+                                "LEFT JOIN player_names pn ON pb.player_uuid = pn.player_uuid " +
+                                "WHERE pb.currency_id = ? ORDER BY pb.balance DESC LIMIT ?")) {
+
+            stmt.setString(1, currencyId);
+            stmt.setInt(2, limit);
+
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                Object[] entry = new Object[3];
+                entry[0] = rs.getString("player_uuid"); // UUID como String
+                entry[1] = rs.getString("player_name"); // Nombre del jugador
+                entry[2] = rs.getDouble("balance");
+                results.add(entry);
+            }
+
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Error al obtener top balances con nombres desde MySQL: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return results.toArray(new Object[0][0]);
+    }
+
+    @Override
+    public void updatePlayerName(UUID playerUUID, String playerName) {
+        if (!mysqlConnection.isConnected()) {
+            plugin.getLogger().warning("No hay conexión activa con MySQL");
+            return;
+        }
+
+        if (playerName == null || playerName.trim().isEmpty()) {
+            return;
+        }
+
+        try (Connection conn = mysqlConnection.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(
+                        "INSERT INTO player_names (player_uuid, player_name, last_updated) " +
+                                "VALUES (?, ?, NOW()) " +
+                                "ON DUPLICATE KEY UPDATE player_name = ?, last_updated = NOW()")) {
+
+            stmt.setString(1, playerUUID.toString());
+            stmt.setString(2, playerName);
+            stmt.setString(3, playerName);
+
+            stmt.executeUpdate();
+
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Error al actualizar nombre de jugador en MySQL: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public String getPlayerName(UUID playerUUID) {
+        if (!mysqlConnection.isConnected()) {
+            return null;
+        }
+
+        try (Connection conn = mysqlConnection.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(
+                        "SELECT player_name FROM player_names WHERE player_uuid = ?")) {
+
+            stmt.setString(1, playerUUID.toString());
+
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                return rs.getString("player_name");
+            }
+
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Error al obtener nombre de jugador desde MySQL: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    @Override
+    public Map<UUID, String> getPlayerNames(Iterable<UUID> playerUUIDs) {
+        Map<UUID, String> names = new HashMap<>();
+        
+        if (!mysqlConnection.isConnected()) {
+            return names;
+        }
+
+        List<String> uuidStrings = new ArrayList<>();
+        for (UUID uuid : playerUUIDs) {
+            uuidStrings.add("'" + uuid.toString() + "'");
+        }
+
+        if (uuidStrings.isEmpty()) {
+            return names;
+        }
+
+        try (Connection conn = mysqlConnection.getConnection();
+                Statement stmt = conn.createStatement()) {
+
+            String inClause = String.join(",", uuidStrings);
+            ResultSet rs = stmt.executeQuery(
+                    "SELECT player_uuid, player_name FROM player_names WHERE player_uuid IN (" + inClause + ")");
+
+            while (rs.next()) {
+                UUID uuid = UUID.fromString(rs.getString("player_uuid"));
+                String name = rs.getString("player_name");
+                names.put(uuid, name);
+            }
+
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Error al obtener nombres de jugadores desde MySQL: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return names;
+    }
+
+    @Override
+    public void syncPlayerNames(Map<UUID, String> activePlayers) {
+        if (!mysqlConnection.isConnected()) {
+            return;
+        }
+
+        try (Connection conn = mysqlConnection.getConnection()) {
+            conn.setAutoCommit(false);
+            
+            for (Map.Entry<UUID, String> entry : activePlayers.entrySet()) {
+                UUID playerUUID = entry.getKey();
+                String playerName = entry.getValue();
+                
+                if (playerName != null && !playerName.trim().isEmpty()) {
+                    try (PreparedStatement stmt = conn.prepareStatement(
+                            "INSERT INTO player_names (player_uuid, player_name, last_updated) " +
+                                    "VALUES (?, ?, NOW()) " +
+                                    "ON DUPLICATE KEY UPDATE player_name = ?, last_updated = NOW()")) {
+                        
+                        stmt.setString(1, playerUUID.toString());
+                        stmt.setString(2, playerName);
+                        stmt.setString(3, playerName);
+                        
+                        stmt.executeUpdate();
+                    }
+                }
+            }
+            
+            conn.commit();
+            conn.setAutoCommit(true);
+
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Error al sincronizar nombres de jugadores en MySQL: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     @Override

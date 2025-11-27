@@ -116,6 +116,11 @@ public class MongoDBConnection {
         }
     }
 
+    // Método para obtener una colección específica por nombre
+    public MongoCollection<Document> getCollection(String collectionName) {
+        return database.getCollection(collectionName);
+    }
+
     // Recarga la configuración desde el archivo
     public void reloadConfiguration() {
         this.loadConfiguration();

@@ -1,10 +1,12 @@
 package com.spectrasonic.MythicEconomy.database;
 
 import java.util.UUID;
+import java.util.Map;
 
 // Interfaz para proveedores de datos de economía
 // Permite cambiar entre diferentes sistemas de almacenamiento
 // Soporta múltiples monedas con esquema de tabla única
+// Además soporta almacenamiento y recuperación de nombres de jugadores para visualización web
 public interface EconomyDataProvider {
 
     // ========== MÉTODOS BÁSICOS (para compatibilidad hacia atrás) ==========
@@ -88,6 +90,43 @@ public interface EconomyDataProvider {
      * @return Array de arreglos [UUID, balance]
      */
     Object[][] getTopBalances(String currencyId, int limit);
+
+    /**
+     * Obtiene el top de jugadores más ricos para una moneda específica incluyendo nombres
+     * @param currencyId ID de la moneda
+     * @param limit Número máximo de jugadores a retornar
+     * @return Array de arreglos [UUID, playerName, balance]
+     */
+    Object[][] getTopBalancesWithNames(String currencyId, int limit);
+
+    // ========== MÉTODOS DE GESTIÓN DE NOMBRES DE JUGADORES ==========
+    
+    /**
+     * Almacena o actualiza el nombre de un jugador asociado a su UUID
+     * @param playerUUID UUID del jugador
+     * @param playerName Nombre del jugador
+     */
+    void updatePlayerName(UUID playerUUID, String playerName);
+
+    /**
+     * Obtiene el nombre de un jugador por su UUID
+     * @param playerUUID UUID del jugador
+     * @return Nombre del jugador o null si no existe
+     */
+    String getPlayerName(UUID playerUUID);
+
+    /**
+     * Obtiene una lista de nombres de jugadores por sus UUIDs
+     * @param playerUUIDs Lista de UUIDs de jugadores
+     * @return Mapa de UUID -> nombre de jugador
+     */
+    Map<UUID, String> getPlayerNames(Iterable<UUID> playerUUIDs);
+
+    /**
+     * Sincroniza nombres de jugadores activos (útil para mantener nombres actualizados)
+     * @param activePlayers Mapa de UUID -> nombre de jugadores actualmente activos
+     */
+    void syncPlayerNames(Map<UUID, String> activePlayers);
 
     // ========== MÉTODOS DE GESTIÓN ==========
     
