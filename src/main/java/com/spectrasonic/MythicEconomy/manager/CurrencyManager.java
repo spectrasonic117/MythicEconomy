@@ -76,7 +76,7 @@ public class CurrencyManager {
         String symbol = config.getString("economy.currency.symbol", "$");
         String name = config.getString("economy.currency.name", "monedas");
         String nameSingular = config.getString("economy.currency.name-singular", "moneda");
-        boolean decimal = config.getBoolean("economy.currency.decimals", true); // Cambiado de "decimal" a "decimals"
+        boolean decimal = config.getBoolean("economy.currency.decimal", true);
         double startingBalance = config.getDouble("economy.starting-balance", 100.0);
 
         Currency currency = new Currency(
