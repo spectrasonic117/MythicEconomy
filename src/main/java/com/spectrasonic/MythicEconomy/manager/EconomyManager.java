@@ -13,6 +13,8 @@ import com.spectrasonic.MythicEconomy.database.EconomyDataProvider;
 import com.spectrasonic.MythicEconomy.database.InternalEconomyProvider;
 import com.spectrasonic.MythicEconomy.database.MongoDBConnection;
 import com.spectrasonic.MythicEconomy.database.MongoDBEconomyProvider;
+import com.spectrasonic.MythicEconomy.database.MySQLConnection;
+import com.spectrasonic.MythicEconomy.database.MySQLEconomyProvider;
 import com.spectrasonic.MythicEconomy.models.Currency;
 
 import java.io.File;
@@ -28,6 +30,7 @@ public class EconomyManager {
     public final JavaPlugin plugin;
     private EconomyDataProvider dataProvider;
     private MongoDBConnection mongoConnection;
+    private MySQLConnection mysqlConnection;
     private CurrencyManager currencyManager;
 
     // Configuración de respaldo para sistema interno
@@ -92,6 +95,18 @@ public class EconomyManager {
             } else {
                 // Fallback al sistema interno si MongoDB falla
                 plugin.getLogger().warning("No se pudo conectar a MongoDB, usando sistema interno");
+                this.dataProvider = new InternalEconomyProvider(plugin, this);
+            }
+        } else if (useExternalDB && "MYSQL".equalsIgnoreCase(databaseType)) {
+            // Usar MySQL
+            this.mysqlConnection = new MySQLConnection(plugin);
+
+            if (mysqlConnection.connect()) {
+                this.dataProvider = new MySQLEconomyProvider(plugin, mysqlConnection);
+                plugin.getLogger().info("Usando MySQL como proveedor de datos de economía");
+            } else {
+                // Fallback al sistema interno si MySQL falla
+                plugin.getLogger().warning("No se pudo conectar a MySQL, usando sistema interno");
                 this.dataProvider = new InternalEconomyProvider(plugin, this);
             }
         } else {
@@ -223,14 +238,14 @@ public class EconomyManager {
         return topBalances;
     }
 
-    // Obtiene el total de dinero en circulación
+    // Obtiene el total de dinero en circulación (moneda por defecto para compatibilidad)
     public double getTotalMoney() {
-        return dataProvider.getTotalMoney();
+        return dataProvider.getTotalMoney("default");
     }
 
-    // Obtiene el número total de cuentas
+    // Obtiene el número total de cuentas (moneda por defecto para compatibilidad)
     public int getTotalAccounts() {
-        return (int) dataProvider.getTotalPlayers();
+        return (int) dataProvider.getTotalPlayers("default");
     }
 
     // Recarga la configuración desde el archivo
@@ -241,6 +256,8 @@ public class EconomyManager {
         // Recargar configuración del proveedor de datos si es necesario
         if (dataProvider instanceof MongoDBEconomyProvider) {
             mongoConnection.reloadConfiguration();
+        } else if (dataProvider instanceof MySQLEconomyProvider) {
+            mysqlConnection.reloadConfiguration();
         }
 
         plugin.getLogger().info("Configuración de economía recargada.");
@@ -464,5 +481,15 @@ public class EconomyManager {
     // Verifica si el proveedor de datos está disponible
     public boolean isDataProviderAvailable() {
         return dataProvider != null && dataProvider.isAvailable();
+    }
+
+    // Obtiene la conexión MySQL (si está disponible)
+    public MySQLConnection getMySQLConnection() {
+        return mysqlConnection;
+    }
+
+    // Verifica si está usando MySQL
+    public boolean isUsingMySQL() {
+        return dataProvider instanceof MySQLEconomyProvider;
     }
 }

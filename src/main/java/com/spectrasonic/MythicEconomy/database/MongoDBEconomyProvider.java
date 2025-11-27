@@ -36,15 +36,13 @@ public class MongoDBEconomyProvider implements EconomyDataProvider {
             MongoCollection<Document> collection = mongoConnection.getCollection();
             Document playerDoc = collection.find(Filters.and(
                     Filters.eq("uuid", playerUUID.toString()),
-                    Filters.eq("currencyId", currencyId)
-            )).first();
+                    Filters.eq("currencyId", currencyId))).first();
 
             if (playerDoc != null) {
                 return playerDoc.getDouble("balance");
             } else {
                 // Jugador nuevo, devolver saldo inicial de la moneda
                 double startingBalance = plugin.getConfig().getDouble("economy.starting-balance", 100.0);
-                // TODO: Obtener saldo inicial de la moneda específica desde CurrencyManager
                 return startingBalance;
             }
 
@@ -85,8 +83,7 @@ public class MongoDBEconomyProvider implements EconomyDataProvider {
             collection.replaceOne(
                     Filters.and(
                             Filters.eq("uuid", playerUUID.toString()),
-                            Filters.eq("currencyId", currencyId)
-                    ),
+                            Filters.eq("currencyId", currencyId)),
                     playerDoc,
                     new ReplaceOptions().upsert(true));
 
@@ -120,8 +117,7 @@ public class MongoDBEconomyProvider implements EconomyDataProvider {
             long modifiedCount = collection.updateOne(
                     Filters.and(
                             Filters.eq("uuid", playerUUID.toString()),
-                            Filters.eq("currencyId", currencyId)
-                    ),
+                            Filters.eq("currencyId", currencyId)),
                     Updates.combine(
                             Updates.inc("balance", amount),
                             Updates.set("lastUpdated", System.currentTimeMillis())),
@@ -159,8 +155,7 @@ public class MongoDBEconomyProvider implements EconomyDataProvider {
             // Obtener saldo actual para verificar
             Document playerDoc = collection.find(Filters.and(
                     Filters.eq("uuid", playerUUID.toString()),
-                    Filters.eq("currencyId", currencyId)
-            )).first();
+                    Filters.eq("currencyId", currencyId))).first();
             if (playerDoc == null) {
                 return false; // Jugador no existe
             }
@@ -174,8 +169,7 @@ public class MongoDBEconomyProvider implements EconomyDataProvider {
             long modifiedCount = collection.updateOne(
                     Filters.and(
                             Filters.eq("uuid", playerUUID.toString()),
-                            Filters.eq("currencyId", currencyId)
-                    ),
+                            Filters.eq("currencyId", currencyId)),
                     Updates.combine(
                             Updates.inc("balance", -amount),
                             Updates.set("lastUpdated", System.currentTimeMillis())))
@@ -196,7 +190,8 @@ public class MongoDBEconomyProvider implements EconomyDataProvider {
         return hasEnoughBalance(playerUUID, amount, "default");
     }
 
-    // Verifica si un jugador tiene suficiente dinero en una moneda específica en MongoDB
+    // Verifica si un jugador tiene suficiente dinero en una moneda específica en
+    // MongoDB
     public boolean hasEnoughBalance(UUID playerUUID, double amount, String currencyId) {
         if (!mongoConnection.isConnected()) {
             plugin.getLogger().warning("No hay conexión activa con MongoDB");
@@ -207,8 +202,7 @@ public class MongoDBEconomyProvider implements EconomyDataProvider {
             MongoCollection<Document> collection = mongoConnection.getCollection();
             Document playerDoc = collection.find(Filters.and(
                     Filters.eq("uuid", playerUUID.toString()),
-                    Filters.eq("currencyId", currencyId)
-            )).first();
+                    Filters.eq("currencyId", currencyId))).first();
 
             if (playerDoc != null) {
                 double currentBalance = playerDoc.getDouble("balance");
@@ -239,7 +233,6 @@ public class MongoDBEconomyProvider implements EconomyDataProvider {
 
         try {
             double startingBalance = plugin.getConfig().getDouble("economy.starting-balance", 100.0);
-            // TODO: Obtener saldo inicial de la moneda específica desde CurrencyManager
             setBalance(playerUUID, startingBalance, currencyId);
 
             plugin.getLogger().info("Jugador creado en MongoDB para moneda " + currencyId + ": " + playerUUID);
@@ -250,10 +243,20 @@ public class MongoDBEconomyProvider implements EconomyDataProvider {
         }
     }
 
-    // Obtiene estadísticas de la colección
+    // Métodos heredados de la interfaz para compatibilidad hacia atrás
+    // Nota: Estos métodos fueron eliminados de la interfaz para evitar conflictos
+    // pero se mantienen aquí para compatibilidad con implementaciones anteriores
+
+    @Deprecated
     public long getTotalPlayers() {
         // Para compatibilidad, cuenta solo la moneda por defecto
         return getTotalPlayers("default");
+    }
+
+    @Deprecated
+    public double getTotalMoney() {
+        // Para compatibilidad, suma solo la moneda por defecto
+        return getTotalMoney("default");
     }
 
     // Obtiene el total de jugadores para una moneda específica
@@ -268,12 +271,6 @@ public class MongoDBEconomyProvider implements EconomyDataProvider {
             plugin.getLogger().severe("Error al obtener total de jugadores: " + e.getMessage());
             return 0;
         }
-    }
-
-    // Obtiene el dinero total en circulación
-    public double getTotalMoney() {
-        // Para compatibilidad, suma solo la moneda por defecto
-        return getTotalMoney("default");
     }
 
     // Obtiene el dinero total en circulación para una moneda específica
@@ -302,6 +299,91 @@ public class MongoDBEconomyProvider implements EconomyDataProvider {
             plugin.getLogger().severe("Error al obtener dinero total: " + e.getMessage());
             e.printStackTrace();
             return 0.0;
+        }
+    }
+
+    @Override
+    public long getTotalUniquePlayers() {
+        if (!mongoConnection.isConnected()) {
+            return 0;
+        }
+
+        try {
+            // Contar jugadores únicos (distintos UUIDs)
+            Document result = mongoConnection.getCollection().aggregate(java.util.Arrays.asList(
+                    new Document("$group", new Document("_id", null)
+                            .append("uniquePlayers", new Document("$addToSet", "$uuid"))),
+                    new Document("$project", new Document("count", new Document("$size", "$uniquePlayers")))))
+                    .first();
+
+            if (result != null) {
+                return result.getLong("count");
+            }
+
+            return 0;
+
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error al obtener total de jugadores únicos: " + e.getMessage());
+            return 0;
+        }
+    }
+
+    @Override
+    public double getTotalMoneyAllCurrencies() {
+        if (!mongoConnection.isConnected()) {
+            return 0.0;
+        }
+
+        try {
+            MongoCollection<Document> collection = mongoConnection.getCollection();
+
+            // Usar agregación para sumar todos los balances de todas las monedas
+            Document result = collection.aggregate(java.util.Arrays.asList(
+                    new Document("$group", new Document("_id", null)
+                            .append("totalBalance", new Document("$sum", "$balance")))))
+                    .first();
+
+            if (result != null) {
+                return result.getDouble("totalBalance");
+            }
+
+            return 0.0;
+
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error al obtener dinero total de todas las monedas: " + e.getMessage());
+            e.printStackTrace();
+            return 0.0;
+        }
+    }
+
+    @Override
+    public Object[][] getTopBalances(String currencyId, int limit) {
+        if (!mongoConnection.isConnected()) {
+            return new Object[0][0];
+        }
+
+        try {
+            MongoCollection<Document> collection = mongoConnection.getCollection();
+
+            // Obtener top balances ordenados por saldo descendente
+            java.util.List<Document> results = collection.find(Filters.eq("currencyId", currencyId))
+                    .sort(new Document("balance", -1))
+                    .limit(limit)
+                    .into(new java.util.ArrayList<>());
+
+            Object[][] topBalances = new Object[results.size()][2];
+            for (int i = 0; i < results.size(); i++) {
+                Document doc = results.get(i);
+                topBalances[i][0] = doc.getString("uuid"); // UUID como String
+                topBalances[i][1] = doc.getDouble("balance");
+            }
+
+            return topBalances;
+
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error al obtener top balances desde MongoDB: " + e.getMessage());
+            e.printStackTrace();
+            return new Object[0][0];
         }
     }
 

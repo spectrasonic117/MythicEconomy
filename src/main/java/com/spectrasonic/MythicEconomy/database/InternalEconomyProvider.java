@@ -88,23 +88,68 @@ public class InternalEconomyProvider implements EconomyDataProvider {
         return currentBalance >= amount;
     }
 
+    // Métodos heredados de la interfaz (para compatibilidad hacia atrás)
+    // Estos métodos están marcados como @Deprecated para indicar que se deben usar las versiones con currencyId
+    
     @Override
+    @Deprecated
     public void createPlayer(UUID playerUUID) {
         if (!economyManager.playerBalances.containsKey(playerUUID)) {
             economyManager.playerBalances.put(playerUUID, economyManager.startingBalance);
         }
     }
 
-    @Override
+    // Métodos heredados de la interfaz para compatibilidad hacia atrás
+    // Nota: Estos métodos fueron eliminados de la interfaz para evitar conflictos
+    // pero se mantienen aquí para compatibilidad con implementaciones anteriores
+    
+    @Deprecated
     public long getTotalPlayers() {
         // Para compatibilidad, cuenta solo la moneda por defecto
         return getTotalPlayers("default");
     }
 
-    @Override
+    @Deprecated
     public double getTotalMoney() {
         // Para compatibilidad, suma solo la moneda por defecto
         return getTotalMoney("default");
+    }
+
+    // Implementación de métodos nuevos de la interfaz
+    @Override
+    public void createPlayer(UUID playerUUID, String currencyId) {
+        Map<UUID, Double> currencyMap = currencyBalances.computeIfAbsent(currencyId, k -> new HashMap<>());
+        double startingBalance = economyManager.getCurrencyManager().getCurrency(currencyId).getStartingBalance();
+        currencyMap.putIfAbsent(playerUUID, startingBalance);
+    }
+
+    @Override
+    public long getTotalUniquePlayers() {
+        return currencyBalances.values().stream()
+                .flatMap(map -> map.keySet().stream())
+                .distinct()
+                .count();
+    }
+
+    @Override
+    public double getTotalMoneyAllCurrencies() {
+        return currencyBalances.values().stream()
+                .flatMapToDouble(map -> map.values().stream().mapToDouble(Double::doubleValue))
+                .sum();
+    }
+
+    @Override
+    public Object[][] getTopBalances(String currencyId, int limit) {
+        Map<UUID, Double> currencyMap = currencyBalances.get(currencyId);
+        if (currencyMap == null || currencyMap.isEmpty()) {
+            return new Object[0][0];
+        }
+
+        return currencyMap.entrySet().stream()
+                .sorted((e1, e2) -> Double.compare(e2.getValue(), e1.getValue()))
+                .limit(limit)
+                .map(entry -> new Object[]{entry.getKey().toString(), entry.getValue()})
+                .toArray(Object[][]::new);
     }
 
     // Métodos para múltiples monedas
