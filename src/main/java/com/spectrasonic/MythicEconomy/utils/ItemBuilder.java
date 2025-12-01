@@ -11,7 +11,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import java.util.HashSet;
 import java.util.Set;
 
-@Deprecated
+@SuppressWarnings("deprecation")
 public class ItemBuilder {
     private final ItemStack item;
     private final ItemMeta meta;

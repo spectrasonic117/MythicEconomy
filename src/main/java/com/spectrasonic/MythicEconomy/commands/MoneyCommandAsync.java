@@ -9,12 +9,12 @@ import org.bukkit.Bukkit;
 import com.spectrasonic.MythicEconomy.manager.EconomyManagerAsync;
 import com.spectrasonic.MythicEconomy.utils.MessageUtils;
 
+// import org.bukkit.plugin.java.JavaPlugin;
+
 import java.util.concurrent.CompletableFuture;
 
-/**
- * Versión asíncrona del comando Money para operaciones no bloqueantes.
- * Basado en PaperMC recomendaciones para async command handling.
- */
+// Versión asíncrona del comando Money para operaciones no bloqueantes.
+// Basado en PaperMC recomendaciones para async command handling.
 public class MoneyCommandAsync {
 
     public void register() {
@@ -67,9 +67,7 @@ public class MoneyCommandAsync {
                 .register();
     }
 
-    /**
-     * Muestra el saldo del propio jugador de forma asíncrona
-     */
+    // Muestra el saldo del propio jugador de forma asíncrona
     private void showPlayerBalanceAsync(Player sender, Player target) {
         EconomyManagerAsync economyManager = EconomyManagerAsync.getInstance();
 
@@ -102,9 +100,7 @@ public class MoneyCommandAsync {
                 });
     }
 
-    /**
-     * Muestra el saldo de otro jugador de forma asíncrona
-     */
+    // Muestra el saldo de otro jugador de forma asíncrona
     private void showOtherPlayerBalanceAsync(Player sender, Player target) {
         EconomyManagerAsync economyManager = EconomyManagerAsync.getInstance();
 
@@ -138,10 +134,8 @@ public class MoneyCommandAsync {
                 });
     }
 
-    /**
-     * Obtiene el plugin desde EconomyManagerAsync (necesario para el scheduler)
-     */
-    private org.bukkit.plugin.java.JavaPlugin getPlugin() {
-        return EconomyManagerAsync.getInstance().getPlugin();
-    }
+    // Obtiene el plugin desde EconomyManagerAsync (necesario para el scheduler)
+    // private JavaPlugin getPlugin() {
+    // return EconomyManagerAsync.getInstance().getPlugin();
+    // }
 }

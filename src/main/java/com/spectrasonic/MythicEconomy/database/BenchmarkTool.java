@@ -11,12 +11,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.ThreadLocalRandom;
 
-/**
- * Herramienta de benchmark para probar el rendimiento bajo carga concurrente.
- * Simula múltiples operaciones simultáneas para validar que el sistema
- * asíncrono
- * maneja bien la concurrencia.
- */
+// Herramienta de benchmark para probar el rendimiento bajo carga concurrente.
+// Simula múltiples operaciones simultáneas para validar que el sistema asíncrono maneja bien la concurrencia.
+
 public class BenchmarkTool {
 
     private final JavaPlugin plugin;
@@ -36,9 +33,7 @@ public class BenchmarkTool {
         this.economyManager = EconomyManagerAsync.getInstance();
     }
 
-    /**
-     * Inicia una prueba de benchmark con configuración personalizada
-     */
+    // Inicia una prueba de benchmark con configuración personalizada
     public void startBenchmark(int concurrentUsers, int operationsPerUser, int testDurationSeconds) {
         if (isRunning) {
             MessageUtils.sendConsoleMessage("<red>Ya hay un benchmark en ejecución.</red>");
@@ -72,12 +67,10 @@ public class BenchmarkTool {
         }, testDurationSeconds * 20L); // 20 ticks por segundo
     }
 
-    /**
-     * Simula operaciones de un usuario
-     */
+    // Simula operaciones de un usuario
     private void simulateUserOperations(int userId, int operationsCount) {
         UUID playerUUID = new UUID(1234567890L + userId, 9876543210L);
-        String playerName = "BenchmarkPlayer" + userId;
+        // String playerName = "BenchmarkPlayer" + userId;
 
         // Crear jugador en la base de datos usando el provider directamente
         if (economyManager.getAsyncDataProvider() != null) {
@@ -97,9 +90,7 @@ public class BenchmarkTool {
         }
     }
 
-    /**
-     * Ejecuta operaciones simulando uso real
-     */
+    // Ejecuta operaciones simulando uso real
     private CompletableFuture<Void> runOperations(int userId, UUID playerUUID, int operationsCount) {
         @SuppressWarnings("unchecked")
         CompletableFuture<Void>[] futures = new CompletableFuture[operationsCount];
@@ -200,9 +191,7 @@ public class BenchmarkTool {
         return CompletableFuture.allOf(futures);
     }
 
-    /**
-     * Finaliza el benchmark y muestra resultados
-     */
+    // Finaliza el benchmark y muestra resultados
     private void endBenchmark() {
         endTime = System.currentTimeMillis();
         isRunning = false;
@@ -244,9 +233,7 @@ public class BenchmarkTool {
         }
     }
 
-    /**
-     * Obtiene el estado actual del benchmark
-     */
+    // Obtiene el estado actual del benchmark
     public String getBenchmarkStatus() {
         if (!isRunning && !benchmarkCompleted) {
             return "No hay benchmark en ejecución";
@@ -260,16 +247,12 @@ public class BenchmarkTool {
         return "Benchmark finalizado";
     }
 
-    /**
-     * Verifica si el benchmark está actualmente en ejecución
-     */
+    // Verifica si el benchmark está actualmente en ejecución
     public boolean isRunning() {
         return isRunning;
     }
 
-    /**
-     * Cancela el benchmark actual
-     */
+    // Cancela el benchmark actual
     public void cancelBenchmark() {
         if (isRunning) {
             isRunning = false;
@@ -277,9 +260,7 @@ public class BenchmarkTool {
         }
     }
 
-    /**
-     * Métodos de conveniencia para pruebas rápidas
-     */
+    // Métodos de conveniencia para pruebas rápidas
     public void quickBenchmark() {
         MessageUtils.sendConsoleMessage(
                 "<green>🚀 Iniciando benchmark rápido (10 usuarios, 100 operaciones cada uno)</green>");

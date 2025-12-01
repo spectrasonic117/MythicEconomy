@@ -7,10 +7,8 @@ import com.spectrasonic.MythicEconomy.database.BenchmarkTool;
 import com.spectrasonic.MythicEconomy.utils.MessageUtils;
 import com.spectrasonic.MythicEconomy.manager.EconomyManagerAsync;
 
-/**
- * Comando para ejecutar benchmarks de rendimiento del sistema económico
- * asíncrono.
- */
+// Comando para ejecutar benchmarks de rendimiento del sistema económico asíncrono.
+
 public class BenchmarkCommand {
 
     private final BenchmarkTool benchmarkTool;
@@ -29,9 +27,19 @@ public class BenchmarkCommand {
                                         new IntegerArgument("operations", 1),
                                         new IntegerArgument("duration", 10))
                                 .executes((sender, args) -> {
-                                    int users = (Integer) args.get("users");
-                                    int operations = (Integer) args.get("operations");
-                                    int duration = (Integer) args.get("duration");
+                                    Integer usersObj = (Integer) args.get("users");
+                                    Integer operationsObj = (Integer) args.get("operations");
+                                    Integer durationObj = (Integer) args.get("duration");
+
+                                    if (usersObj == null || operationsObj == null || durationObj == null) {
+                                        MessageUtils.sendMessage(sender,
+                                                "<red>Error: Argumentos inválidos en el comando.</red>");
+                                        return;
+                                    }
+
+                                    int users = usersObj;
+                                    int operations = operationsObj;
+                                    int duration = durationObj;
 
                                     if (users > 1000) {
                                         MessageUtils.sendMessage(sender,
