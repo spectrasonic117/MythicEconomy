@@ -4,33 +4,35 @@ This document provides a comprehensive guide on how to integrate and utilize the
 
 ## 1. Local API Import
 
-To use the MythicEconomy API in your project, you'll need to add it as a dependency. The recommended way is to include it in your `pom.xml` if you are using Maven.
+To use the MythicEconomy API in your project, you'll need to add it as a dependency. Place the MythicEconomy plugin JAR file into a `libs` directory in your project's root folder.
 
-First, ensure you have the MythicEconomy plugin JAR file in your local Maven repository. You can typically install it manually:
+### Maven
 
-```bash
-mvn install:install-file \
-  -Dfile=/path/to/MythicEconomy.jar \
-  -DgroupId=com.spectrasonic \
-  -DartifactId=MythicEconomy \
-  -Dversion=1.0.0 \
-  -Dpackaging=jar \
-  -DgeneratePom=true
-```
-*(Note: Replace `/path/to/MythicEconomy.jar` and `1.0.0` with the actual path and version of the plugin JAR you are using.)*
-
-Then, add the following dependency to your `pom.xml`:
+If you are using Maven, after placing the JAR in the `libs` folder, add the following dependency to your `pom.xml`:
 
 ```xml
 <dependency>
     <groupId>com.spectrasonic</groupId>
     <artifactId>MythicEconomy</artifactId>
-    <version>1.0.0</version> <!-- Use the actual version of the plugin -->
-    <scope>provided</scope> <!-- Important: Mark as provided, as the plugin will be on the server -->
+    <version>1.4.0</version> <!-- Use the actual version of the plugin -->
+    <scope>system</scope>
+    <systemPath>${project.basedir}/libs/MythicEconomy-1.4.0.jar</systemPath>
 </dependency>
 ```
+*(Note: Replace `MythicEconomy.jar` and `1.4.0` with the actual filename and version of the plugin JAR you are using. The `groupId` and `artifactId` can be arbitrary but should match the plugin's actual ones if known.)*
 
-Alternatively, if MythicEconomy is available on a public Maven repository, you would add that repository to your `pom.xml` and then the dependency. For most Minecraft plugins, local installation or a custom repository for server-side dependencies is common.
+### Gradle
+
+If you are using Gradle, after placing the JAR in the `libs` folder, add the following to your `build.gradle` file:
+
+```groovy
+dependencies {
+    compileOnly files('libs/MythicEconomy-1.4.0')
+}
+```
+*(Note: For older Gradle versions, `compileOnly` might be `provided` or `compile` with the `provided` plugin. Replace `MythicEconomy` and `1.0.0` with the actual artifact name and version of the plugin JAR you are using. The `name` should typically be the `artifactId` from the plugin's `pom.xml` or manifest.)*
+
+For most Minecraft plugins, distributing the API JAR directly or using a custom repository for server-side dependencies is common.
 
 ## 2. API Usage
 
@@ -576,12 +578,3 @@ player.sendMessage("Balance: " + economyAPI.formatMoney(balance));
 // ❌ Incorrect
 player.sendMessage("Balance: $" + balance);
 ```
-
-## 7. Support and Contact
-
-*   **Author**: Spectrasonic
-*   **Version**: 1.0.0
-*   **GitHub**: https://github.com/spectrasonic
-*   **Plugin**: MythicEconomy
-
-For bug reports or feature requests, please contact the author or open an issue on the project's GitHub repository.

@@ -2,87 +2,103 @@
 
 # Configuración de economía
 economy:
-  # Saldo inicial para nuevos jugadores
-  starting-balance: 100.0
-  
-  # Formato de moneda
-  currency:
-    symbol: "$"
-    name: "monedas"
-    name-singular: "moneda"
-    
-  # Límites
-  limits:
-    max-balance: 999999999.99
-    min-transfer: 0.01
-    max-transfer: 100000.0
+    # Saldo inicial para nuevos jugadores
+    starting-balance: 100.0
+
+    # Formato de moneda
+    currency:
+        symbol: "$"
+        name: "monedas"
+        name-singular: "moneda"
+
+    # Límites
+    limits:
+        max-balance: 999999999.99
+        min-transfer: 0.01
+        max-transfer: 100000.0
 
 # Configuración de mensajes
 messages:
-  # Prefijo para todos los mensajes
-  prefix: "<gray>[<gold>MythicEconomy</gold>]</gray> <gold>»</gold> "
-  
-  # Mensajes de economía
-  economy:
-    insufficient-funds: "<red>No tienes suficiente dinero."
-    invalid-amount: "<red>Cantidad inválida."
-    player-not-found: "<red>Jugador no encontrado."
-    self-transfer: "<red>No puedes enviarte dinero a ti mismo."
-    
-  # Mensajes de éxito
-  success:
-    money-given: "<green>Se han dado <yellow>{amount}</yellow> {currency} a <aqua>{player}</aqua>."
-    money-taken: "<green>Se han quitado <yellow>{amount}</yellow> {currency} a <aqua>{player}</aqua>."
-    money-set: "<green>El saldo de <aqua>{player}</aqua> ha sido establecido a <yellow>{amount}</yellow> {currency}."
-    money-sent: "<green>Has enviado <yellow>{amount}</yellow> {currency} a <aqua>{player}</aqua>."
-    money-received: "<green>Has recibido <yellow>{amount}</yellow> {currency} de <aqua>{player}</aqua>."
+    # Prefijo para todos los mensajes
+    prefix: "<gray>[<gold>MythicEconomy</gold>]</gray> <gold>»</gold> "
+
+    # Mensajes de economía
+    economy:
+        insufficient-funds: "<red>No tienes suficiente dinero."
+        invalid-amount: "<red>Cantidad inválida."
+        player-not-found: "<red>Jugador no encontrado."
+        self-transfer: "<red>No puedes enviarte dinero a ti mismo."
+
+    # Mensajes de éxito
+    success:
+        money-given: "<green>Se han dado <yellow>{amount}</yellow> {currency} a <aqua>{player}</aqua>."
+        money-taken: "<green>Se han quitado <yellow>{amount}</yellow> {currency} a <aqua>{player}</aqua>."
+        money-set: "<green>El saldo de <aqua>{player}</aqua> ha sido establecido a <yellow>{amount}</yellow> {currency}."
+        money-sent: "<green>Has enviado <yellow>{amount}</yellow> {currency} a <aqua>{player}</aqua>."
+        money-received: "<green>Has recibido <yellow>{amount}</yellow> {currency} de <aqua>{player}</aqua>."
 
 # Configuración de múltiples monedas
 multi-currency:
-  # Habilitar sistema de múltiples monedas
-  enabled: true
+    # Habilitar sistema de múltiples monedas
+    enabled: true
 
-  # Moneda por defecto del servidor (para compatibilidad hacia atrás)
-  default-currency: "default"
+    # Moneda por defecto del servidor (para compatibilidad hacia atrás)
+    default-currency: "default"
 
-  # Permitir a los jugadores usar comandos de múltiples monedas
-  allow-player-commands: true
+    # Permitir a los jugadores usar comandos de múltiples monedas
+    allow-player-commands: true
 
-  # Directorio donde se almacenan las configuraciones de monedas
-  currencies-directory: "currencies"
+    # Directorio donde se almacenan las configuraciones de monedas
+    currencies-directory: "currencies"
 
 # Configuración de base de datos
 database:
-  # Tipo de almacenamiento: FILE, MYSQL o MONGODB
-  type: "FILE"
+    # Modo asíncrono para operaciones no bloqueantes (recomendado para alta concurrencia)
+    async-mode: true
 
-  # Usar base de datos externa (true) o sistema interno del plugin (false)
-  use-external-database: false
+    # Tipo de almacenamiento: FILE, MYSQL o MONGODB
+    type: "FILE"
 
-  # Configuración para MySQL (si se usa)
-  mysql:
-    host: "localhost"
-    port: 3306
-    database: "MythicEconomy"
-    username: "root"
-    password: ""
-    use-ssl: false
+    # Usar base de datos externa (true) o sistema interno del plugin (false)
+    use-external-database: true
 
-  # Configuración para MongoDB (si se usa)
-  mongodb:
-    # Cadena de conexión MongoDB
-    # Ejemplos:
-    # - Local: "mongodb://localhost:27017"
-    # - Con autenticación: "mongodb://usuario:password@localhost:27017"
-    # - MongoDB Atlas: "mongodb+srv://usuario:password@cluster.mongodb.net"
-    connection-string: "mongodb://localhost:27017"
-    database: "MythicEconomy"
-    collection: "player_economy"
-    # Configuración de conexión
-    connection:
-      # Tiempo de espera para conexión (en segundos)
-      timeout: 30
-      # Número máximo de conexiones en el pool
-      max-pool-size: 10
-      # Número mínimo de conexiones en el pool
-      min-pool-size: 5
+    # Configuración para MySQL (si se usa)
+    mysql:
+        host: "localhost"
+        port: 3306
+        database: "MythicEconomy"
+        username: "root"
+        password: ""
+        use-ssl: false
+
+        # Configuración del pool de conexiones HikariCP (para alto rendimiento)
+        pool:
+            # Tamaño máximo del pool de conexiones (ajustar según número de jugadores concurrentes)
+            maximum-pool-size: 50
+            # Número mínimo de conexiones en el pool
+            minimum-idle: 10
+            # Tiempo de espera para obtener una conexión (en milisegundos)
+            connection-timeout: 30000
+            # Tiempo máximo que una conexión puede estar inactiva (en milisegundos)
+            idle-timeout: 600000
+            # Tiempo de vida máximo de una conexión (en milisegundos)
+            max-lifetime: 1800000
+
+    # Configuración para MongoDB (si se usa)
+    mongodb:
+        # Cadena de conexión MongoDB
+        # Ejemplos:
+        # - Local: "mongodb://localhost:27017"
+        # - Con autenticación: "mongodb://usuario:password@localhost:27017"
+        # - MongoDB Atlas: "mongodb+srv://usuario:password@cluster.mongodb.net"
+        connection-string: "mongodb://localhost:27017"
+        database: "MythicEconomy"
+        collection: "player_economy"
+        # Configuración de conexión
+        connection:
+            # Tiempo de espera para conexión (en segundos)
+            timeout: 30
+            # Número máximo de conexiones en el pool
+            max-pool-size: 10
+            # Número mínimo de conexiones en el pool
+            min-pool-size: 5
