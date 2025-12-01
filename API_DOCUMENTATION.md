@@ -1,288 +1,464 @@
-# MythicEconomy API - Documentación para Desarrolladores
+# MythicEconomy API Documentation
 
-## Introducción
+This document provides a comprehensive guide on how to integrate and utilize the MythicEconomy plugin's API in your own Minecraft plugins.
 
-MythicEconomy proporciona una API simple y fácil de usar para que otros plugins puedan interactuar con el sistema de economía. Esta API permite agregar, quitar, transferir y consultar dinero de los jugadores de forma segura y eficiente.
+## 1. Local API Import
 
-## Instalación y Configuración
+To use the MythicEconomy API in your project, you'll need to add it as a dependency. The recommended way is to include it in your `pom.xml` if you are using Maven.
 
-### 1. Dependencia en tu plugin
+First, ensure you have the MythicEconomy plugin JAR file in your local Maven repository. You can typically install it manually:
 
-Agrega MythicEconomy como dependencia en tu `plugin.yml`:
-
-```yaml
-depend: [MythicEconomy]
-# o si es opcional:
-softdepend: [MythicEconomy]
+```bash
+mvn install:install-file \
+  -Dfile=/path/to/MythicEconomy.jar \
+  -DgroupId=com.spectrasonic \
+  -DartifactId=MythicEconomy \
+  -Dversion=1.0.0 \
+  -Dpackaging=jar \
+  -DgeneratePom=true
 ```
+*(Note: Replace `/path/to/MythicEconomy.jar` and `1.0.0` with the actual path and version of the plugin JAR you are using.)*
 
-### 2. Dependencia Local (Maven)
-
-Para incluir MythicEconomy como dependencia local desde tu carpeta `lib`, agrega esto a tu `pom.xml`:
+Then, add the following dependency to your `pom.xml`:
 
 ```xml
-<!-- Dependencia local de MythicEconomy -->
 <dependency>
     <groupId>com.spectrasonic</groupId>
     <artifactId>MythicEconomy</artifactId>
-    <version>1.1.0</version>
-    <scope>system</scope>
-    <systemPath>${project.basedir}/lib/MythicEconomy-*</systemPath>
+    <version>1.0.0</version> <!-- Use the actual version of the plugin -->
+    <scope>provided</scope> <!-- Important: Mark as provided, as the plugin will be on the server -->
 </dependency>
 ```
 
-**Estructura del proyecto:**
-```
-MiPlugin/
-├── lib/
-│   └── MythicEconomy-1.1.0.jar    # Coloca el JAR aquí
-├── src/main/java/
-├── pom.xml
-└── ...
-```
+Alternatively, if MythicEconomy is available on a public Maven repository, you would add that repository to your `pom.xml` and then the dependency. For most Minecraft plugins, local installation or a custom repository for server-side dependencies is common.
 
-### 3. Dependencia Local (Gradle)
+## 2. API Usage
 
-Si usas Gradle, agrega esto a tu `build.gradle`:
+The MythicEconomy API is accessed via a singleton instance. Always check if the API is available before attempting to use it to avoid `IllegalStateException`s if the plugin hasn't loaded yet.
 
-```gradle
-dependencies {
-    compileOnly files('lib/MythicEconomy-1.1.0.jar')
-    // otras dependencias...
-}
-```
-
-## Uso Básico
-
-### Obtener la instancia de la API
+### Getting the API Instance
 
 ```java
 import com.spectrasonic.MythicEconomy.api.MythicEconomyAPI;
 
-public class MiPlugin extends JavaPlugin {
-    
+public class MyPluginIntegration {
+
     private MythicEconomyAPI economyAPI;
-    
-    @Override
+
     public void onEnable() {
-        // Verificar si MythicEconomy está disponible
-        if (!MythicEconomyAPI.isAvailable()) {
-            getLogger().severe("MythicEconomy no está disponible!");
-            getServer().getPluginManager().disablePlugin(this);
-            return;
+        if (MythicEconomyAPI.isAvailable()) {
+            economyAPI = MythicEconomyAPI.getInstance();
+            // API is ready to use
+        } else {
+            // MythicEconomy is not loaded or not ready.
+            // You might want to disable your plugin's economy features or log a warning.
+            System.out.println("MythicEconomy API is not available! Disabling economy features.");
         }
-        
-        // Obtener la instancia de la API
-        this.economyAPI = MythicEconomyAPI.getInstance();
-        getLogger().info("MythicEconomy API cargada correctamente!");
+    }
+
+    // ... rest of your plugin logic
+}
+```
+
+### 2.1 Single Currency Methods (Default Economy)
+
+These methods interact with the server's primary or default currency configured in MythicEconomy.
+
+#### Get Player Balance
+
+Retrieves the balance of a specific player for the default currency.
+
+```java
+import org.bukkit.entity.Player;
+
+// Assuming economyAPI is already initialized as shown above
+public double getPlayerBalance(Player player) {
+    return economyAPI.getBalance(player);
+}
+```
+
+#### Set Player Balance
+
+Sets the balance of a specific player to a given amount for the default currency. Returns `true` if successful, `false` otherwise (e.g., if amount is negative).
+
+```java
+import org.bukkit.entity.Player;
+
+// Assuming economyAPI is already initialized
+public boolean setPlayerBalance(Player player, double amount) {
+    if (economyAPI.setBalance(player, amount)) {
+        player.sendMessage("Your balance has been set to: " + economyAPI.formatMoney(amount));
+        return true;
+    } else {
+        player.sendMessage("Failed to set balance. Amount must be non-negative.");
+        return false;
     }
 }
 ```
 
-## Métodos Principales
+#### Add Money to Player
 
-### 1. Consultar Balance
+Adds a specified amount of money to a player's balance for the default currency.
 
 ```java
-// Obtener el balance de un jugador
-Player player = // ... obtener jugador
-double balance = economyAPI.getBalance(player);
-player.sendMessage("Tu balance es: " + economyAPI.formatMoney(balance));
+import org.bukkit.entity.Player;
+
+// Assuming economyAPI is already initialized
+public boolean givePlayerMoney(Player player, double amount) {
+    if (economyAPI.addMoney(player, amount)) {
+        player.sendMessage("You received: " + economyAPI.formatMoney(amount));
+        return true;
+    } else {
+        player.sendMessage("Failed to add money. Amount must be positive.");
+        return false;
+    }
+}
 ```
+There's also an overloaded `addMoney(Player player, double amount, boolean allowNegative)` method, which can be used if you intend to subtract money by passing a negative `amount` and `allowNegative` as `true`. However, it's generally clearer to use `removeMoney` for subtraction.
 
-### 2. Agregar Dinero
+#### Remove Money from Player
+
+Removes a specified amount of money from a player's balance for the default currency.
 
 ```java
-// Agregar dinero a un jugador
-Player player = // ... obtener jugador
-double amount = 100.0;
+import org.bukkit.entity.Player;
 
-if (economyAPI.addMoney(player, amount)) {
-    player.sendMessage("¡Se han agregado " + economyAPI.formatMoney(amount) + " a tu cuenta!");
-} else {
-    player.sendMessage("Error al agregar dinero.");
+// Assuming economyAPI is already initialized
+public boolean takePlayerMoney(Player player, double amount) {
+    if (economyAPI.removeMoney(player, amount)) {
+        player.sendMessage("You paid: " + economyAPI.formatMoney(amount));
+        return true;
+    } else {
+        player.sendMessage("Failed to remove money. Insufficient funds or invalid amount.");
+        return false;
+    }
+}
+```
+An overloaded `removeMoney(Player player, double amount, boolean force)` method exists to forcefully set the balance, ignoring current funds, if `force` is true. Use with caution.
+
+#### Check Player Funds
+
+Checks if a player has a sufficient amount of the default currency.
+
+```java
+import org.bukkit.entity.Player;
+
+// Assuming economyAPI is already initialized
+public boolean canAfford(Player player, double amount) {
+    return economyAPI.hasEnoughMoney(player, amount);
 }
 ```
 
-### 3. Quitar Dinero
+#### Transfer Money Between Players
+
+Transfers money from one player to another using the default currency.
 
 ```java
-// Quitar dinero a un jugador
-Player player = // ... obtener jugador
-double amount = 50.0;
+import org.bukkit.entity.Player;
 
-if (economyAPI.removeMoney(player, amount)) {
-    player.sendMessage("Se han deducido " + economyAPI.formatMoney(amount) + " de tu cuenta.");
-} else {
-    player.sendMessage("No tienes suficiente dinero.");
+// Assuming economyAPI is already initialized
+public boolean transferFunds(Player fromPlayer, Player toPlayer, double amount) {
+    if (economyAPI.transferMoney(fromPlayer, toPlayer, amount)) {
+        fromPlayer.sendMessage("Transferred " + economyAPI.formatMoney(amount) + " to " + toPlayer.getName());
+        toPlayer.sendMessage("Received " + economyAPI.formatMoney(amount) + " from " + fromPlayer.getName());
+        return true;
+    } else {
+        fromPlayer.sendMessage("Failed to transfer money. Check funds or amount.");
+        return false;
+    }
 }
 ```
 
-### 4. Verificar si tiene suficiente dinero
+#### Format Money Amount
+
+Formats a double amount into a human-readable string based on the default currency's settings (e.g., "1,000.00 Coins").
 
 ```java
-// Verificar si un jugador puede pagar algo
-Player player = // ... obtener jugador
-double cost = 25.0;
-
-if (economyAPI.canPay(player, cost)) {
-    // El jugador puede pagar
-    economyAPI.removeMoney(player, cost);
-    player.sendMessage("Compra realizada!");
-} else {
-    player.sendMessage("No tienes suficiente dinero. Necesitas " + 
-                      economyAPI.formatMoney(cost));
+// Assuming economyAPI is already initialized
+public String formatAmount(double amount) {
+    return economyAPI.formatMoney(amount);
 }
 ```
 
-### 5. Transferir Dinero
+#### Get Currency Information (Default)
+
+Retrieves information about the default currency.
 
 ```java
-// Transferir dinero entre jugadores
-Player sender = // ... jugador que envía
-Player receiver = // ... jugador que recibe
-double amount = 75.0;
-
-if (economyAPI.transferMoney(sender, receiver, amount)) {
-    sender.sendMessage("Has enviado " + economyAPI.formatMoney(amount) + 
-                      " a " + receiver.getName());
-    receiver.sendMessage("Has recibido " + economyAPI.formatMoney(amount) + 
-                        " de " + sender.getName());
-} else {
-    sender.sendMessage("No tienes suficiente dinero para enviar.");
+// Assuming economyAPI is already initialized
+public void printDefaultCurrencyInfo() {
+    System.out.println("Default Currency Symbol: " + economyAPI.getCurrencySymbol());
+    System.out.println("Default Currency Name: " + economyAPI.getCurrencyName());
+    System.out.println("Default Currency Name (Singular): " + economyAPI.getCurrencyNameSingular());
+    System.out.println("Starting Balance: " + economyAPI.getStartingBalance());
 }
 ```
 
-### 6. Establecer Balance
+#### Global Economy Statistics
+
+Retrieve global statistics for the default economy.
 
 ```java
-// Establecer un balance específico
-Player player = // ... obtener jugador
-double newBalance = 500.0;
-
-if (economyAPI.setBalance(player, newBalance)) {
-    player.sendMessage("Tu balance ha sido establecido a " + 
-                      economyAPI.formatMoney(newBalance));
+// Assuming economyAPI is already initialized
+public void printGlobalStats() {
+    System.out.println("Total Money in circulation: " + economyAPI.formatMoney(economyAPI.getTotalMoney()));
+    System.out.println("Total Player Accounts: " + economyAPI.getTotalAccounts());
 }
 ```
 
-## Métodos Avanzados
+## 3. Multi-Currency Methods
 
-### Quitar dinero forzado (permitir balance negativo)
+MythicEconomy supports multiple currencies. These methods allow you to interact with specific currencies using their unique `currencyId`.
+
+#### Get Player Balance for Specific Currency
+
+Retrieves the balance of a specific player for a given currency ID.
 
 ```java
-// Quitar dinero incluso si el jugador no tiene suficiente
-Player player = // ... obtener jugador
-double amount = 1000.0;
-boolean force = true; // Permitir balance negativo
+import org.bukkit.entity.Player;
 
-economyAPI.removeMoney(player, amount, force);
+// Assuming economyAPI is already initialized
+public double getPlayerCurrencyBalance(Player player, String currencyId) {
+    if (economyAPI.currencyExists(currencyId)) {
+        return economyAPI.getBalance(player, currencyId);
+    } else {
+        System.out.println("Currency ID '" + currencyId + "' does not exist.");
+        return 0.0; // Or throw an exception, depending on your error handling
+    }
+}
 ```
 
-### Agregar dinero con validación personalizada
+#### Set Player Balance for Specific Currency
+
+Sets the balance of a specific player to a given amount for a specific currency. Returns `true` if successful, `false` otherwise.
 
 ```java
-// Agregar dinero permitiendo cantidades negativas (equivale a quitar)
-Player player = // ... obtener jugador
-double amount = -50.0; // Cantidad negativa
-boolean allowNegative = true;
+import org.bukkit.entity.Player;
 
-economyAPI.addMoney(player, amount, allowNegative);
+// Assuming economyAPI is already initialized
+public boolean setPlayerCurrencyBalance(Player player, String currencyId, double amount) {
+    if (!economyAPI.currencyExists(currencyId)) {
+        player.sendMessage("Currency ID '" + currencyId + "' does not exist.");
+        return false;
+    }
+    if (economyAPI.setBalance(player, amount, currencyId)) {
+        player.sendMessage("Your " + currencyId + " balance has been set to: " + economyAPI.formatMoney(amount, currencyId));
+        return true;
+    } else {
+        player.sendMessage("Failed to set " + currencyId + " balance. Amount must be non-negative.");
+        return false;
+    }
+}
 ```
 
-## Información del Sistema
+#### Add Money for Specific Currency
 
-### Obtener información de la moneda
+Adds a specified amount of money to a player's balance for a specific currency.
 
 ```java
-// Obtener información sobre la moneda configurada
-String symbol = economyAPI.getCurrencySymbol(); // "$"
-String name = economyAPI.getCurrencyName(); // "monedas"
-String singular = economyAPI.getCurrencyNameSingular(); // "moneda"
+import org.bukkit.entity.Player;
 
-// Formatear dinero
-double amount = 123.45;
-String formatted = economyAPI.formatMoney(amount); // "$123.45"
+// Assuming economyAPI is already initialized
+public boolean givePlayerCurrencyMoney(Player player, String currencyId, double amount) {
+    if (!economyAPI.currencyExists(currencyId)) {
+        player.sendMessage("Currency ID '" + currencyId + "' does not exist.");
+        return false;
+    }
+    if (economyAPI.addMoney(player, amount, currencyId)) {
+        player.sendMessage("You received " + economyAPI.formatMoney(amount, currencyId));
+        return true;
+    } else {
+        player.sendMessage("Failed to add " + currencyId + " money. Amount must be positive.");
+        return false;
+    }
+}
 ```
 
-### Estadísticas del servidor
+#### Remove Money for Specific Currency
+
+Removes a specified amount of money from a player's balance for a specific currency.
 
 ```java
-// Obtener estadísticas del sistema económico
-double totalMoney = economyAPI.getTotalMoney(); // Total de dinero en circulación
-int totalAccounts = economyAPI.getTotalAccounts(); // Número de cuentas
-double startingBalance = economyAPI.getStartingBalance(); // Balance inicial
+import org.bukkit.entity.Player;
 
-getLogger().info("Dinero total en circulación: " + economyAPI.formatMoney(totalMoney));
-getLogger().info("Cuentas totales: " + totalAccounts);
+// Assuming economyAPI is already initialized
+public boolean takePlayerCurrencyMoney(Player player, String currencyId, double amount) {
+    if (!economyAPI.currencyExists(currencyId)) {
+        player.sendMessage("Currency ID '" + currencyId + "' does not exist.");
+        return false;
+    }
+    if (economyAPI.removeMoney(player, amount, currencyId)) {
+        player.sendMessage("You paid " + economyAPI.formatMoney(amount, currencyId));
+        return true;
+    } else {
+        player.sendMessage("Failed to remove " + currencyId + " money. Insufficient funds or invalid amount.");
+        return false;
+    }
+}
 ```
 
-## Eventos de la API
+#### Check Player Funds for Specific Currency
 
-MythicEconomy dispara eventos personalizados que puedes escuchar en tu plugin:
-
-### 1. Evento de Agregar Dinero
+Checks if a player has a sufficient amount of a specific currency.
 
 ```java
-import com.spectrasonic.MythicEconomy.api.events.MoneyAddEvent;
+import org.bukkit.entity.Player;
+
+// Assuming economyAPI is already initialized
+public boolean canAffordCurrency(Player player, String currencyId, double amount) {
+    if (!economyAPI.currencyExists(currencyId)) {
+        System.out.println("Currency ID '" + currencyId + "' does not exist.");
+        return false;
+    }
+    return economyAPI.hasEnoughMoney(player, amount, currencyId);
+}
+```
+
+#### Transfer Money Between Players for Specific Currency
+
+Transfers money from one player to another using a specific currency.
+
+```java
+import org.bukkit.entity.Player;
+
+// Assuming economyAPI is already initialized
+public boolean transferCurrencyFunds(Player fromPlayer, Player toPlayer, String currencyId, double amount) {
+    if (!economyAPI.currencyExists(currencyId)) {
+        fromPlayer.sendMessage("Currency ID '" + currencyId + "' does not exist.");
+        return false;
+    }
+    if (economyAPI.transferMoney(fromPlayer, toPlayer, amount, currencyId)) {
+        fromPlayer.sendMessage("Transferred " + economyAPI.formatMoney(amount, currencyId) + " to " + toPlayer.getName());
+        toPlayer.sendMessage("Received " + economyAPI.formatMoney(amount, currencyId) + " from " + fromPlayer.getName());
+        return true;
+    } else {
+        fromPlayer.sendMessage("Failed to transfer " + currencyId + " money. Check funds or amount.");
+        return false;
+    }
+}
+```
+
+#### Format Money Amount for Specific Currency
+
+Formats a double amount into a human-readable string based on the specific currency's settings.
+
+```java
+// Assuming economyAPI is already initialized
+public String formatCurrencyAmount(double amount, String currencyId) {
+    if (economyAPI.currencyExists(currencyId)) {
+        return economyAPI.formatMoney(amount, currencyId);
+    } else {
+        return "Unknown Currency";
+    }
+}
+```
+
+#### Get Currency Object
+
+Retrieves the `Currency` object for a given `currencyId`. This object contains details like name, symbol, and singular name.
+
+```java
+import com.spectrasonic.MythicEconomy.models.Currency;
+
+// Assuming economyAPI is already initialized
+public void printCurrencyDetails(String currencyId) {
+    Currency currency = economyAPI.getCurrency(currencyId);
+    if (currency != null) {
+        System.out.println("Currency ID: " + currency.getId());
+        System.out.println("Currency Name: " + currency.getName());
+        System.out.println("Currency Symbol: " + currency.getSymbol());
+        System.out.println("Currency Singular Name: " + currency.getSingular());
+    } else {
+        System.out.println("Currency ID '" + currencyId + "' not found.");
+    }
+}
+```
+
+#### List Available Currencies
+
+Retrieves collections of all enabled `Currency` objects or just their IDs.
+
+```java
+import com.spectrasonic.MythicEconomy.models.Currency;
+import java.util.Collection;
+import java.util.Set;
+
+// Assuming economyAPI is already initialized
+public void listAllCurrencies() {
+    Collection<Currency> enabledCurrencies = economyAPI.getEnabledCurrencies();
+    System.out.println("Enabled Currencies:");
+    for (Currency currency : enabledCurrencies) {
+        System.out.println("  - " + currency.getName() + " (" + currency.getId() + ")");
+    }
+
+    Set<String> currencyIds = economyAPI.getCurrencyIds();
+    System.out.println("\nAll Currency IDs:");
+    for (String id : currencyIds) {
+        System.out.println("  - " + id);
+    }
+}
+```
+
+#### Check if Currency Exists
+
+Verifies if a currency with the given `currencyId` is registered and enabled.
+
+```java
+// Assuming economyAPI is already initialized
+public boolean checkIfCurrencyExists(String currencyId) {
+    return economyAPI.currencyExists(currencyId);
+}
+```
+
+## 4. Economy Events
+
+MythicEconomy fires various events that you can listen to in your plugin to react to changes in the economy. All events are located in `com.spectrasonic.MythicEconomy.api.events`.
+
+To listen to an event, register a listener in your plugin:
+
+```java
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import com.spectrasonic.MythicEconomy.api.events.MoneyAddEvent;
+import com.spectrasonic.MythicEconomy.api.events.CurrencyMoneyAddEvent;
 
-public class EconomyListener implements Listener {
-    
+public class MyEconomyListener implements Listener {
+
     @EventHandler
     public void onMoneyAdd(MoneyAddEvent event) {
-        Player player = event.getPlayer();
-        double amount = event.getAmount();
-        double oldBalance = event.getOldBalance();
-        double newBalance = event.getNewBalance();
-        
-        // Hacer algo cuando se agrega dinero
-        getLogger().info(player.getName() + " recibió " + amount + " monedas");
-        
-        // Cancelar el evento si es necesario
-        // event.setCancelled(true);
+        // Handle money addition for the default currency
+        System.out.println(event.getPlayer().getName() + " had " + event.getAmount() + " added to their default balance. New balance: " + event.getNewBalance());
     }
+
+    @EventHandler
+    public void onCurrencyMoneyAdd(CurrencyMoneyAddEvent event) {
+        // Handle money addition for a specific currency
+        System.out.println(event.getPlayer().getName() + " had " + event.getAmount() + " of " + event.getCurrencyId() + " added. New balance: " + event.getNewBalance());
+    }
+
+    // You can listen to other events like:
+    // MoneyRemoveEvent
+    // CurrencyMoneyRemoveEvent
+    // MoneyTransferEvent
+    // CurrencyEconomyEvent (generic event for all currency-related actions)
+    // EconomyEvent (generic event for default economy actions)
 }
 ```
 
-### 2. Evento de Quitar Dinero
+Register your listener in your main plugin class's `onEnable()` method:
 
 ```java
-import com.spectrasonic.MythicEconomy.api.events.MoneyRemoveEvent;
-
-@EventHandler
-public void onMoneyRemove(MoneyRemoveEvent event) {
-    Player player = event.getPlayer();
-    double amount = event.getAmount();
-    
-    // Hacer algo cuando se quita dinero
-    getLogger().info(player.getName() + " perdió " + amount + " monedas");
+// In your main plugin class (e.g., MyPlugin.java)
+@Override
+public void onEnable() {
+    // ... other initialization
+    getServer().getPluginManager().registerEvents(new MyEconomyListener(), this);
 }
 ```
 
-### 3. Evento de Transferencia
+## 5. Examples
 
-```java
-import com.spectrasonic.MythicEconomy.api.events.MoneyTransferEvent;
-
-@EventHandler
-public void onMoneyTransfer(MoneyTransferEvent event) {
-    Player from = event.getFrom();
-    Player to = event.getTo();
-    double amount = event.getAmount();
-    
-    // Hacer algo cuando se transfiere dinero
-    getLogger().info(from.getName() + " envió " + amount + " monedas a " + to.getName());
-    
-    // Cancelar la transferencia si es necesario
-    // event.setCancelled(true);
-}
-```
-
-## Ejemplos Completos
-
-### Ejemplo 1: Sistema de Tienda Simple
+### Example 1: Simple Shop System
 
 ```java
 public class TiendaSimple implements Listener {
@@ -317,7 +493,7 @@ public class TiendaSimple implements Listener {
 }
 ```
 
-### Ejemplo 2: Sistema de Recompensas
+### Example 2: Reward System
 
 ```java
 public class SistemaRecompensas implements Listener {
@@ -353,59 +529,59 @@ public class SistemaRecompensas implements Listener {
 }
 ```
 
-## Mejores Prácticas
+## 6. Best Practices
 
-### 1. Verificar disponibilidad
+### 1. Check Availability
 
-Siempre verifica que MythicEconomy esté disponible antes de usar la API:
+Always check if MythicEconomy is available before using the API:
 
 ```java
 if (!MythicEconomyAPI.isAvailable()) {
-    // Manejar el caso donde MythicEconomy no está disponible
+    // Handle the case where MythicEconomy is not available
     return;
 }
 ```
 
-### 2. Manejar errores
+### 2. Handle Errors
 
-Los métodos de la API devuelven `boolean` para indicar éxito o fallo:
+API methods often return `boolean` to indicate success or failure:
 
 ```java
 if (!economyAPI.addMoney(player, amount)) {
-    // Manejar el error
-    player.sendMessage("Error al procesar la transacción.");
+    // Handle the error
+    player.sendMessage("Error processing the transaction.");
 }
 ```
 
-### 3. Usar eventos para logging
+### 3. Use Events for Logging
 
-Escucha los eventos de la API para mantener logs de transacciones:
+Listen to API events to maintain transaction logs:
 
 ```java
 @EventHandler
 public void onMoneyAdd(MoneyAddEvent event) {
-    // Log de transacciones para auditoría
+    // Log transactions for auditing
     logTransaction(event.getPlayer(), "ADD", event.getAmount());
 }
 ```
 
-### 4. Formatear cantidades
+### 4. Format Amounts Consistently
 
-Usa siempre `formatMoney()` para mostrar cantidades a los jugadores:
+Always use `formatMoney()` when displaying amounts to players:
 
 ```java
-// ✅ Correcto
+// ✅ Correct
 player.sendMessage("Balance: " + economyAPI.formatMoney(balance));
 
-// ❌ Incorrecto
+// ❌ Incorrect
 player.sendMessage("Balance: $" + balance);
 ```
 
-## Soporte y Contacto
+## 7. Support and Contact
 
-- **Autor**: Spectrasonic
-- **Versión**: 1.1.0
-- **GitHub**: https://github.com/spectrasonic
-- **Plugin**: MythicEconomy
+*   **Author**: Spectrasonic
+*   **Version**: 1.0.0
+*   **GitHub**: https://github.com/spectrasonic
+*   **Plugin**: MythicEconomy
 
-Para reportar bugs o solicitar características, contacta al desarrollador o crea un issue en el repositorio del proyecto.
+For bug reports or feature requests, please contact the author or open an issue on the project's GitHub repository.
