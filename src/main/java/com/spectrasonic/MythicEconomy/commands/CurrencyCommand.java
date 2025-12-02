@@ -65,6 +65,17 @@ public class CurrencyCommand {
                                     reloadCurrencies(sender);
                                 }),
 
+                        // /currency check <target> <currency> - Verifica el estado del almacenamiento
+                        new CommandAPICommand("check")
+                                .withArguments(
+                                        new PlayerArgument("target"),
+                                        new StringArgument("currency").replaceSuggestions(ArgumentSuggestions.strings(getCurrencySuggestions())))
+                                .executesPlayer((sender, args) -> {
+                                    Player target = (Player) args.get("target");
+                                    String currencyId = (String) args.get("currency");
+                                    checkStorageStatus(sender, target, currencyId);
+                                }),
+
                         // /currency give <target> <amount> <currency> - Da monedas a un jugador
                         new CommandAPICommand("give")
                                 .withArguments(
@@ -283,5 +294,63 @@ public class CurrencyCommand {
         MessageUtils.sendMessage(target,
                 "<green>Tu saldo ha sido establecido a <yellow>" + currency.formatMoney(amount) +
                         "</yellow>. (Anterior: <gray>" + currency.formatMoney(previousBalance) + "</gray>)");
+    }
+
+    private void checkStorageStatus(Player sender, Player target, String currencyId) {
+        CurrencyManager currencyManager = CurrencyManager.getInstance();
+        EconomyManager economyManager = EconomyManager.getInstance();
+
+        Currency currency = currencyManager.getCurrency(currencyId);
+        if (currency == null || !currency.isEnabled()) {
+            MessageUtils.sendMessage(sender, "<red>Moneda no encontrada o deshabilitada: " + currencyId);
+            return;
+        }
+
+        MessageUtils.sendMessage(sender, "<gray>=== VERIFICANDO SISTEMA DE ALMACENAMIENTO ===</gray>");
+        MessageUtils.sendMessage(sender, "<gray>Jugador: <aqua>" + target.getName() + "</aqua> (" + target.getUniqueId() + ")</gray>");
+        MessageUtils.sendMessage(sender, "<gray>Moneda: <gold>" + currencyId + "</gold></gray>");
+        
+        // Verificar tipo de almacenamiento
+        if (economyManager.isUsingMySQL()) {
+            MessageUtils.sendMessage(sender, "<green>Tipo de almacenamiento: <yellow>MySQL</yellow></green>");
+            
+            try {
+                com.spectrasonic.MythicEconomy.database.MySQLEconomyProvider mysqlProvider =
+                    (com.spectrasonic.MythicEconomy.database.MySQLEconomyProvider) economyManager.getDataProvider();
+                
+                boolean exists = mysqlProvider.playerExists(target.getUniqueId(), currencyId);
+                MessageUtils.sendMessage(sender, "<gray>Existe en BD: " + (exists ? "<green>Sí</green>" : "<red>No</red>") + "</gray>");
+                
+                if (!exists) {
+                    MessageUtils.sendMessage(sender, "<yellow>Creando jugador en la base de datos...</yellow>");
+                    mysqlProvider.createPlayer(target.getUniqueId(), currencyId);
+                    MessageUtils.sendMessage(sender, "<green>Jugador creado exitosamente</green>");
+                }
+                
+            } catch (Exception e) {
+                MessageUtils.sendMessage(sender, "<red>Error al verificar MySQL: " + e.getMessage() + "</red>");
+            }
+            
+        } else if (economyManager.isUsingMongoDB()) {
+            MessageUtils.sendMessage(sender, "<green>Tipo de almacenamiento: <yellow>MongoDB</yellow></green>");
+        } else {
+            MessageUtils.sendMessage(sender, "<green>Tipo de almacenamiento: <yellow>Archivos locales</yellow></green>");
+        }
+        
+        // Mostrar balance actual
+        double balance = economyManager.getBalance(target, currencyId);
+        MessageUtils.sendMessage(sender, "<gray>Balance actual: <gold>" + currency.formatMoney(balance) + "</gold></gray>");
+        MessageUtils.sendMessage(sender, "<gray>Saldo inicial: <yellow>" + currency.formatMoney(currency.getStartingBalance()) + "</yellow></gray>");
+        
+        // Verificar si el balance parece correcto
+        if (balance == currency.getStartingBalance()) {
+            MessageUtils.sendMessage(sender, "<yellow>⚠ El balance es igual al saldo inicial (posible jugador nuevo)</yellow>");
+        } else if (balance == 0.0) {
+            MessageUtils.sendMessage(sender, "<red>⚠ El balance es 0 (posible problema de persistencia)</red>");
+        } else {
+            MessageUtils.sendMessage(sender, "<green>✓ El balance parece ser correcto</green>");
+        }
+        
+        MessageUtils.sendMessage(sender, "<gray>=== FIN DE VERIFICACIÓN ===</gray>");
     }
 }

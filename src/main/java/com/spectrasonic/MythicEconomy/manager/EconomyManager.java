@@ -280,18 +280,11 @@ public class EconomyManager {
             balance = ((InternalEconomyProvider) dataProvider).getBalance(player.getUniqueId(), currencyId);
         } else if (dataProvider instanceof MongoDBEconomyProvider) {
             balance = ((MongoDBEconomyProvider) dataProvider).getBalance(player.getUniqueId(), currencyId);
+        } else if (dataProvider instanceof MySQLEconomyProvider) {
+            balance = ((MySQLEconomyProvider) dataProvider).getBalance(player.getUniqueId(), currencyId);
         } else {
             // Fallback para otros proveedores
             balance = dataProvider.getBalance(player.getUniqueId());
-        }
-
-        // Si es MongoDB y el jugador no existe, crearlo
-        if (dataProvider instanceof MongoDBEconomyProvider && balance == currency.getStartingBalance()) {
-            if (dataProvider instanceof MongoDBEconomyProvider) {
-                ((MongoDBEconomyProvider) dataProvider).createPlayer(player.getUniqueId(), currencyId);
-            } else {
-                dataProvider.createPlayer(player.getUniqueId());
-            }
         }
 
         return balance;
@@ -319,6 +312,8 @@ public class EconomyManager {
             ((InternalEconomyProvider) dataProvider).setBalance(player.getUniqueId(), amount, currencyId);
         } else if (dataProvider instanceof MongoDBEconomyProvider) {
             ((MongoDBEconomyProvider) dataProvider).setBalance(player.getUniqueId(), amount, currencyId);
+        } else if (dataProvider instanceof MySQLEconomyProvider) {
+            ((MySQLEconomyProvider) dataProvider).setBalance(player.getUniqueId(), amount, currencyId);
         } else {
             // Fallback para otros proveedores - solo funciona con default
             if (currencyId.equals("default")) {
@@ -360,6 +355,8 @@ public class EconomyManager {
             return ((InternalEconomyProvider) dataProvider).addBalance(player.getUniqueId(), amount, currencyId);
         } else if (dataProvider instanceof MongoDBEconomyProvider) {
             return ((MongoDBEconomyProvider) dataProvider).addBalance(player.getUniqueId(), amount, currencyId);
+        } else if (dataProvider instanceof MySQLEconomyProvider) {
+            return ((MySQLEconomyProvider) dataProvider).addBalance(player.getUniqueId(), amount, currencyId);
         } else {
             // Fallback para otros proveedores - solo funciona con default
             if (currencyId.equals("default")) {
@@ -402,6 +399,8 @@ public class EconomyManager {
             return ((InternalEconomyProvider) dataProvider).removeBalance(player.getUniqueId(), amount, currencyId);
         } else if (dataProvider instanceof MongoDBEconomyProvider) {
             return ((MongoDBEconomyProvider) dataProvider).removeBalance(player.getUniqueId(), amount, currencyId);
+        } else if (dataProvider instanceof MySQLEconomyProvider) {
+            return ((MySQLEconomyProvider) dataProvider).removeBalance(player.getUniqueId(), amount, currencyId);
         } else {
             // Fallback para otros proveedores - solo funciona con default
             if (currencyId.equals("default")) {
@@ -425,6 +424,8 @@ public class EconomyManager {
             return ((InternalEconomyProvider) dataProvider).hasEnoughBalance(player.getUniqueId(), amount, currencyId);
         } else if (dataProvider instanceof MongoDBEconomyProvider) {
             return ((MongoDBEconomyProvider) dataProvider).hasEnoughBalance(player.getUniqueId(), amount, currencyId);
+        } else if (dataProvider instanceof MySQLEconomyProvider) {
+            return ((MySQLEconomyProvider) dataProvider).hasEnoughBalance(player.getUniqueId(), amount, currencyId);
         } else {
             // Fallback para otros proveedores - solo funciona con default
             if (currencyId.equals("default")) {
@@ -597,5 +598,12 @@ public class EconomyManager {
         }
         
         return resolvedNames;
+    }
+
+    /**
+     * Obtiene la instancia del plugin
+     */
+    public JavaPlugin getPlugin() {
+        return plugin;
     }
 }

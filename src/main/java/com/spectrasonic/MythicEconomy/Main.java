@@ -6,6 +6,7 @@ import com.spectrasonic.MythicEconomy.managers.EventManager;
 import com.spectrasonic.MythicEconomy.managers.ConfigManager;
 import com.spectrasonic.MythicEconomy.providers.VaultEconomyProvider;
 import com.spectrasonic.MythicEconomy.placeholders.MythicEconomyPlaceholders;
+import com.spectrasonic.MythicEconomy.listeners.PlayerJoinListener;
 import com.spectrasonic.MythicEconomy.utils.CommandUtils;
 import com.spectrasonic.MythicEconomy.utils.MessageUtils;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -48,6 +49,10 @@ public final class Main extends JavaPlugin {
         this.setupPlaceholderAPI();
 
         commandManager.registerCommands();
+        
+        // Registrar listeners
+        PlayerJoinListener playerJoinListener = new PlayerJoinListener(economyManager);
+        eventManager.registerEvents(playerJoinListener);
 
         CommandUtils.setPlugin(this);
 

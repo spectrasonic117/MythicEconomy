@@ -51,8 +51,12 @@ public class MySQLEconomyProviderAsync implements AsyncEconomyDataProvider {
                                 if (rs.next()) {
                                     return rs.getDouble("balance");
                                 } else {
-                                    // Jugador nuevo, obtener saldo inicial de la moneda
+                                    // Jugador nuevo, obtener saldo inicial y crearlo en la base de datos
                                     double startingBalance = getCurrencyStartingBalance(currencyId);
+                                    
+                                    // Crear el jugador de forma asíncrona
+                                    createPlayer(playerUUID, currencyId).join();
+                                    
                                     return startingBalance;
                                 }
                             }
@@ -189,8 +193,12 @@ public class MySQLEconomyProviderAsync implements AsyncEconomyDataProvider {
                                 if (rs.next()) {
                                     return rs.getDouble("balance") >= amount;
                                 } else {
-                                    // Jugador no existe, verificar saldo inicial
+                                    // Jugador no existe, crearlo y verificar saldo inicial
                                     double startingBalance = getCurrencyStartingBalance(currencyId);
+                                    
+                                    // Crear el jugador de forma asíncrona
+                                    createPlayer(playerUUID, currencyId).join();
+                                    
                                     return startingBalance >= amount;
                                 }
                             }
@@ -213,9 +221,27 @@ public class MySQLEconomyProviderAsync implements AsyncEconomyDataProvider {
                 .thenCompose(conn -> CompletableFuture.runAsync(() -> {
                     try (conn) {
                         double startingBalance = getCurrencyStartingBalance(currencyId);
-                        setBalance(playerUUID, startingBalance, currencyId).join();
-
-                        log.debug("Jugador creado en MySQL para moneda {}: {}", currencyId, playerUUID);
+                        
+                        // Usar INSERT IGNORE para evitar duplicados y asegurar que el jugador exista
+                        String sql = """
+                                INSERT IGNORE INTO player_balances (player_uuid, currency_id, balance, last_updated)
+                                VALUES (?, ?, ?, NOW())
+                                """;
+                        
+                        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                            stmt.setString(1, playerUUID.toString());
+                            stmt.setString(2, currencyId);
+                            stmt.setDouble(3, startingBalance);
+                            
+                            int rowsAffected = stmt.executeUpdate();
+                            
+                            if (rowsAffected > 0) {
+                                log.debug("Jugador creado en MySQL para moneda {}: {}", currencyId, playerUUID);
+                            } else {
+                                // El jugador ya existía, actualizar su balance por si acaso
+                                setBalance(playerUUID, startingBalance, currencyId).join();
+                            }
+                        }
                     } catch (Exception e) {
                         log.error("Error al crear jugador {} para moneda {}", playerUUID, currencyId, e);
                     }

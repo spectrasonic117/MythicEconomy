@@ -84,13 +84,18 @@ public class MySQLEconomyProvider implements EconomyDataProvider {
             if (rs.next()) {
                 return rs.getDouble("balance");
             } else {
-                // Jugador nuevo, devolver saldo inicial de la moneda
+                // Jugador nuevo, crearlo en la base de datos con saldo inicial
                 if (currencyManager == null) {
                     currencyManager = new CurrencyManager(plugin);
                 }
 
                 Currency currency = currencyManager.getCurrency(currencyId);
-                return currency != null ? currency.getStartingBalance() : 100.0;
+                double startingBalance = currency != null ? currency.getStartingBalance() : 100.0;
+                
+                // Crear el jugador en la base de datos
+                createPlayer(playerUUID, currencyId);
+                
+                return startingBalance;
             }
 
         } catch (SQLException e) {
@@ -214,13 +219,17 @@ public class MySQLEconomyProvider implements EconomyDataProvider {
                 return currentBalance >= amount;
             }
 
-            // Si el jugador no existe, verificar saldo inicial
+            // Si el jugador no existe, crearlo y verificar saldo inicial
             if (currencyManager == null) {
                 currencyManager = new CurrencyManager(plugin);
             }
 
             Currency currency = currencyManager.getCurrency(currencyId);
             double startingBalance = currency != null ? currency.getStartingBalance() : 100.0;
+            
+            // Crear el jugador en la base de datos
+            createPlayer(playerUUID, currencyId);
+            
             return startingBalance >= amount;
 
         } catch (SQLException e) {
@@ -250,8 +259,29 @@ public class MySQLEconomyProvider implements EconomyDataProvider {
                 startingBalance = currency.getStartingBalance();
             }
 
-            setBalance(playerUUID, startingBalance, currencyId);
-            plugin.getLogger().info("Jugador creado en MySQL para moneda " + currencyId + ": " + playerUUID);
+            // Usar INSERT IGNORE para evitar duplicados y asegurar que el jugador exista
+            try (Connection conn = mysqlConnection.getConnection();
+                    PreparedStatement stmt = conn.prepareStatement(
+                            "INSERT IGNORE INTO player_balances (player_uuid, currency_id, balance, last_updated) " +
+                                    "VALUES (?, ?, ?, NOW())")) {
+
+                stmt.setString(1, playerUUID.toString());
+                stmt.setString(2, currencyId);
+                stmt.setDouble(3, startingBalance);
+
+                int rowsAffected = stmt.executeUpdate();
+                
+                if (rowsAffected > 0) {
+                    plugin.getLogger().info("Jugador creado en MySQL para moneda " + currencyId + ": " + playerUUID);
+                } else {
+                    // El jugador ya existía, actualizar su balance por si acaso
+                    setBalance(playerUUID, startingBalance, currencyId);
+                }
+
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Error al crear jugador en MySQL: " + e.getMessage());
+                e.printStackTrace();
+            }
 
         } catch (Exception e) {
             plugin.getLogger().severe("Error al crear jugador en MySQL: " + e.getMessage());
@@ -562,5 +592,55 @@ public class MySQLEconomyProvider implements EconomyDataProvider {
     @Override
     public boolean isAvailable() {
         return mysqlConnection != null && mysqlConnection.isConnected();
+    }
+
+    /**
+     * Verifica si un jugador existe en la base de datos para una moneda específica
+     */
+    public boolean playerExists(UUID playerUUID, String currencyId) {
+        if (!mysqlConnection.isConnected()) {
+            return false;
+        }
+
+        try (Connection conn = mysqlConnection.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(
+                        "SELECT 1 FROM player_balances WHERE player_uuid = ? AND currency_id = ? LIMIT 1")) {
+
+            stmt.setString(1, playerUUID.toString());
+            stmt.setString(2, currencyId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Error al verificar existencia del jugador: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Asegura que un jugador exista en la base de datos para todas las monedas habilitadas
+     */
+    public void ensurePlayerExists(UUID playerUUID) {
+        if (!mysqlConnection.isConnected()) {
+            return;
+        }
+
+        try {
+            if (currencyManager == null) {
+                currencyManager = new CurrencyManager(plugin);
+            }
+
+            // Crear el jugador para todas las monedas habilitadas
+            for (var currency : currencyManager.getEnabledCurrencies()) {
+                if (!playerExists(playerUUID, currency.getId())) {
+                    createPlayer(playerUUID, currency.getId());
+                }
+            }
+
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error al asegurar existencia del jugador: " + e.getMessage());
+        }
     }
 }
