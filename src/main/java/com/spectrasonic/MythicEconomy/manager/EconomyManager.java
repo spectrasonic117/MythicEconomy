@@ -65,6 +65,11 @@ public class EconomyManager {
 
         instance = this;
         MessageUtils.sendConsoleMessage("<green>Sistema de economía MythicEconomy inicializado correctamente.");
+        
+        // Iniciar tarea de verificación de conexión periódica si se usa MySQL
+        if (isUsingMySQL()) {
+            startMySQLConnectionCheckTask();
+        }
     }
 
     private void loadConfiguration() {
@@ -605,5 +610,24 @@ public class EconomyManager {
      */
     public JavaPlugin getPlugin() {
         return plugin;
+    }
+    
+    /**
+     * Inicia una tarea periódica para verificar y mantener la conexión MySQL activa
+     */
+    private void startMySQLConnectionCheckTask() {
+        // Verificar la conexión cada 5 minutos (6000 ticks)
+        Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+            if (isUsingMySQL() && mysqlConnection != null) {
+                if (!mysqlConnection.isConnected()) {
+                    plugin.getLogger().warning("Conexión MySQL perdida, intentando reconectar...");
+                    if (mysqlConnection.connect()) {
+                        plugin.getLogger().info("Conexión MySQL restablecida exitosamente");
+                    } else {
+                        plugin.getLogger().severe("No se pudo restablecer la conexión MySQL");
+                    }
+                }
+            }
+        }, 6000L, 6000L); // 5 minutos, se repite cada 5 minutos
     }
 }

@@ -54,14 +54,28 @@ public class MySQLConnection {
      */
     public boolean connect() {
         try {
-            if (connection != null && !connection.isClosed()) {
+            // Si ya hay una conexión activa, verificar que funcione
+            if (connection != null && !connection.isClosed() && connection.isValid(2)) {
                 return true;
             }
 
-            String url = String.format("jdbc:mysql://%s:%d/%s?useSSL=%s&serverTimezone=UTC",
+            // Cerrar conexión anterior si existe
+            if (connection != null && !connection.isClosed()) {
+                try {
+                    connection.close();
+                } catch (SQLException e) {
+                    plugin.getLogger().warning("Error al cerrar conexión anterior: " + e.getMessage());
+                }
+            }
+
+            String url = String.format("jdbc:mysql://%s:%d/%s?useSSL=%s&serverTimezone=UTC&autoReconnect=true&failOverReadOnly=false&maxReconnects=10&initialTimeout=10",
                     host, port, database, useSSL);
 
+            plugin.getLogger().info("Conectando a MySQL en " + host + ":" + port + "/" + database);
             connection = DriverManager.getConnection(url, username, password);
+
+            // Establecer timeout para la conexión
+            connection.setNetworkTimeout(null, 30000); // 30 segundos
 
             // Crear la tabla si no existe
             createTableIfNotExists();
@@ -120,8 +134,13 @@ public class MySQLConnection {
      */
     public boolean isConnected() {
         try {
-            return connection != null && !connection.isClosed() && connection.isValid(5);
+            if (connection == null || connection.isClosed()) {
+                return false;
+            }
+            // Usar un timeout más corto para verificar la conexión
+            return connection.isValid(2);
         } catch (SQLException e) {
+            plugin.getLogger().warning("Error al verificar conexión MySQL: " + e.getMessage());
             return false;
         }
     }
@@ -143,7 +162,8 @@ public class MySQLConnection {
      * Obtiene el balance total de dinero en circulación para todas las monedas
      */
     public double getTotalMoneyAllCurrencies() {
-        if (!isConnected()) {
+        // Intentar reconectar si no hay conexión
+        if (!isConnected() && !connect()) {
             return 0.0;
         }
 
@@ -156,6 +176,15 @@ public class MySQLConnection {
             }
         } catch (SQLException e) {
             plugin.getLogger().severe("Error al obtener dinero total: " + e.getMessage());
+            // Intentar reconectar para la próxima vez
+            try {
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (SQLException ex) {
+                // Ignorar error al cerrar
+            }
+            connection = null;
         }
 
         return 0.0;
@@ -165,7 +194,8 @@ public class MySQLConnection {
      * Obtiene el número total de jugadores únicos registrados
      */
     public long getTotalUniquePlayers() {
-        if (!isConnected()) {
+        // Intentar reconectar si no hay conexión
+        if (!isConnected() && !connect()) {
             return 0;
         }
 
@@ -178,6 +208,15 @@ public class MySQLConnection {
             }
         } catch (SQLException e) {
             plugin.getLogger().severe("Error al obtener total de jugadores: " + e.getMessage());
+            // Intentar reconectar para la próxima vez
+            try {
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (SQLException ex) {
+                // Ignorar error al cerrar
+            }
+            connection = null;
         }
 
         return 0;

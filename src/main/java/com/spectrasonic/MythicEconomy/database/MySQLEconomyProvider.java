@@ -67,9 +67,13 @@ public class MySQLEconomyProvider implements EconomyDataProvider {
 
     @Override
     public double getBalance(UUID playerUUID, String currencyId) {
+        // Intentar reconectar si no hay conexión
         if (!mysqlConnection.isConnected()) {
-            plugin.getLogger().warning("No hay conexión activa con MySQL");
-            return 0.0;
+            plugin.getLogger().warning("No hay conexión activa con MySQL, intentando reconectar...");
+            if (!mysqlConnection.connect()) {
+                plugin.getLogger().severe("No se pudo restablecer la conexión con MySQL");
+                return 0.0;
+            }
         }
 
         try (Connection conn = mysqlConnection.getConnection();
@@ -100,16 +104,27 @@ public class MySQLEconomyProvider implements EconomyDataProvider {
 
         } catch (SQLException e) {
             plugin.getLogger().severe("Error al obtener saldo desde MySQL: " + e.getMessage());
-            e.printStackTrace();
+            // Marcar conexión como nula para forzar reconexión la próxima vez
+            try {
+                if (mysqlConnection.getConnection() != null && !mysqlConnection.getConnection().isClosed()) {
+                    mysqlConnection.getConnection().close();
+                }
+            } catch (SQLException ex) {
+                // Ignorar error al cerrar
+            }
             return 0.0;
         }
     }
 
     @Override
     public void setBalance(UUID playerUUID, double amount, String currencyId) {
+        // Intentar reconectar si no hay conexión
         if (!mysqlConnection.isConnected()) {
-            plugin.getLogger().warning("No hay conexión activa con MySQL");
-            return;
+            plugin.getLogger().warning("No hay conexión activa con MySQL, intentando reconectar...");
+            if (!mysqlConnection.connect()) {
+                plugin.getLogger().severe("No se pudo restablecer la conexión con MySQL");
+                return;
+            }
         }
 
         if (amount < 0) {
@@ -131,15 +146,26 @@ public class MySQLEconomyProvider implements EconomyDataProvider {
 
         } catch (SQLException e) {
             plugin.getLogger().severe("Error al establecer saldo en MySQL: " + e.getMessage());
-            e.printStackTrace();
+            // Marcar conexión como nula para forzar reconexión la próxima vez
+            try {
+                if (mysqlConnection.getConnection() != null && !mysqlConnection.getConnection().isClosed()) {
+                    mysqlConnection.getConnection().close();
+                }
+            } catch (SQLException ex) {
+                // Ignorar error al cerrar
+            }
         }
     }
 
     @Override
     public boolean addBalance(UUID playerUUID, double amount, String currencyId) {
+        // Intentar reconectar si no hay conexión
         if (!mysqlConnection.isConnected()) {
-            plugin.getLogger().warning("No hay conexión activa con MySQL");
-            return false;
+            plugin.getLogger().warning("No hay conexión activa con MySQL, intentando reconectar...");
+            if (!mysqlConnection.connect()) {
+                plugin.getLogger().severe("No se pudo restablecer la conexión con MySQL");
+                return false;
+            }
         }
 
         if (amount <= 0) {
@@ -162,16 +188,27 @@ public class MySQLEconomyProvider implements EconomyDataProvider {
 
         } catch (SQLException e) {
             plugin.getLogger().severe("Error al agregar saldo en MySQL: " + e.getMessage());
-            e.printStackTrace();
+            // Marcar conexión como nula para forzar reconexión la próxima vez
+            try {
+                if (mysqlConnection.getConnection() != null && !mysqlConnection.getConnection().isClosed()) {
+                    mysqlConnection.getConnection().close();
+                }
+            } catch (SQLException ex) {
+                // Ignorar error al cerrar
+            }
             return false;
         }
     }
 
     @Override
     public boolean removeBalance(UUID playerUUID, double amount, String currencyId) {
+        // Intentar reconectar si no hay conexión
         if (!mysqlConnection.isConnected()) {
-            plugin.getLogger().warning("No hay conexión activa con MySQL");
-            return false;
+            plugin.getLogger().warning("No hay conexión activa con MySQL, intentando reconectar...");
+            if (!mysqlConnection.connect()) {
+                plugin.getLogger().severe("No se pudo restablecer la conexión con MySQL");
+                return false;
+            }
         }
 
         if (amount <= 0) {
@@ -193,16 +230,27 @@ public class MySQLEconomyProvider implements EconomyDataProvider {
 
         } catch (SQLException e) {
             plugin.getLogger().severe("Error al reducir saldo en MySQL: " + e.getMessage());
-            e.printStackTrace();
+            // Marcar conexión como nula para forzar reconexión la próxima vez
+            try {
+                if (mysqlConnection.getConnection() != null && !mysqlConnection.getConnection().isClosed()) {
+                    mysqlConnection.getConnection().close();
+                }
+            } catch (SQLException ex) {
+                // Ignorar error al cerrar
+            }
             return false;
         }
     }
 
     @Override
     public boolean hasEnoughBalance(UUID playerUUID, double amount, String currencyId) {
+        // Intentar reconectar si no hay conexión
         if (!mysqlConnection.isConnected()) {
-            plugin.getLogger().warning("No hay conexión activa con MySQL");
-            return false;
+            plugin.getLogger().warning("No hay conexión activa con MySQL, intentando reconectar...");
+            if (!mysqlConnection.connect()) {
+                plugin.getLogger().severe("No se pudo restablecer la conexión con MySQL");
+                return false;
+            }
         }
 
         try (Connection conn = mysqlConnection.getConnection();
@@ -234,16 +282,27 @@ public class MySQLEconomyProvider implements EconomyDataProvider {
 
         } catch (SQLException e) {
             plugin.getLogger().severe("Error al verificar saldo en MySQL: " + e.getMessage());
-            e.printStackTrace();
+            // Marcar conexión como nula para forzar reconexión la próxima vez
+            try {
+                if (mysqlConnection.getConnection() != null && !mysqlConnection.getConnection().isClosed()) {
+                    mysqlConnection.getConnection().close();
+                }
+            } catch (SQLException ex) {
+                // Ignorar error al cerrar
+            }
             return false;
         }
     }
 
     @Override
     public void createPlayer(UUID playerUUID, String currencyId) {
+        // Intentar reconectar si no hay conexión
         if (!mysqlConnection.isConnected()) {
-            plugin.getLogger().warning("No hay conexión activa con MySQL");
-            return;
+            plugin.getLogger().warning("No hay conexión activa con MySQL, intentando reconectar...");
+            if (!mysqlConnection.connect()) {
+                plugin.getLogger().severe("No se pudo restablecer la conexión con MySQL");
+                return;
+            }
         }
 
         try {
@@ -280,12 +339,18 @@ public class MySQLEconomyProvider implements EconomyDataProvider {
 
             } catch (SQLException e) {
                 plugin.getLogger().severe("Error al crear jugador en MySQL: " + e.getMessage());
-                e.printStackTrace();
+                // Marcar conexión como nula para forzar reconexión la próxima vez
+                try {
+                    if (mysqlConnection.getConnection() != null && !mysqlConnection.getConnection().isClosed()) {
+                        mysqlConnection.getConnection().close();
+                    }
+                } catch (SQLException ex) {
+                    // Ignorar error al cerrar
+                }
             }
 
         } catch (Exception e) {
             plugin.getLogger().severe("Error al crear jugador en MySQL: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 

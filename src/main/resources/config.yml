@@ -57,7 +57,7 @@ database:
     async-mode: true
 
     # Tipo de almacenamiento: FILE, MYSQL o MONGODB
-    type: "FILE"
+    type: "MYSQL"
 
     # Usar base de datos externa (true) o sistema interno del plugin (false)
     use-external-database: true
