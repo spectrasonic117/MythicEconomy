@@ -1,15 +1,21 @@
 package com.spectrasonic.MythicEconomy.commands;
 
+import com.spectrasonic.MythicEconomy.Main;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.arguments.ArgumentSuggestions;
 import dev.jorel.commandapi.arguments.DoubleArgument;
 import dev.jorel.commandapi.arguments.PlayerArgument;
 import dev.jorel.commandapi.arguments.StringArgument;
+import dev.jorel.commandapi.arguments.IntegerArgument;
+import dev.jorel.commandapi.CommandPermission;
 import org.bukkit.entity.Player;
 import com.spectrasonic.MythicEconomy.manager.CurrencyManager;
 import com.spectrasonic.MythicEconomy.manager.EconomyManager;
 import com.spectrasonic.MythicEconomy.models.Currency;
 import com.spectrasonic.MythicEconomy.utils.MessageUtils;
+import org.bukkit.command.CommandSender;
+import org.bukkit.Bukkit;
+import java.util.Map;
 
 public class EconomyCommand {
 
@@ -17,14 +23,15 @@ public class EconomyCommand {
         // Comando principal /economy
         new CommandAPICommand("mythiceconomy")
                 .withAliases("eco", "econ", "meco", "mythiceco", "me")
-                .withPermission("MythicEconomy.economy.admin")
+                .withPermission(CommandPermission.OP)
                 .withSubcommands(
                         // /economy give <player> <amount> [currency]
                         new CommandAPICommand("give")
                                 .withArguments(
                                         new PlayerArgument("player"),
                                         new DoubleArgument("amount", 0.01),
-                                        new StringArgument("currency").setOptional(true).replaceSuggestions(ArgumentSuggestions.strings(getCurrencySuggestions())))
+                                        new StringArgument("currency").setOptional(true).replaceSuggestions(
+                                                ArgumentSuggestions.strings(getCurrencySuggestions())))
                                 .executes((sender, args) -> {
                                     Player target = (Player) args.get("player");
                                     if (target == null) {
@@ -46,7 +53,8 @@ public class EconomyCommand {
                                     CurrencyManager currencyManager = CurrencyManager.getInstance();
                                     Currency currency = currencyManager.getCurrency(currencyId);
                                     if (currency == null || !currency.isEnabled()) {
-                                        MessageUtils.sendMessage(sender, "<red>Moneda no encontrada o deshabilitada: " + currencyId);
+                                        MessageUtils.sendMessage(sender,
+                                                "<red>Moneda no encontrada o deshabilitada: " + currencyId);
                                         return;
                                     }
 
@@ -57,7 +65,8 @@ public class EconomyCommand {
                                         MessageUtils.sendMessage(target,
                                                 "<green>Has recibido <yellow>" + currency.formatMoney(amount) +
                                                         "</yellow>. Nuevo saldo: <yellow>" +
-                                                        currency.formatMoney(economyManager.getBalance(target, currencyId))
+                                                        currency.formatMoney(
+                                                                economyManager.getBalance(target, currencyId))
                                                         + "</yellow>");
                                     } else {
                                         MessageUtils.sendMessage(sender, "<red>Error: La cantidad debe ser mayor a 0.");
@@ -69,7 +78,8 @@ public class EconomyCommand {
                                 .withArguments(
                                         new PlayerArgument("player"),
                                         new DoubleArgument("amount", 0.01),
-                                        new StringArgument("currency").setOptional(true).replaceSuggestions(ArgumentSuggestions.strings(getCurrencySuggestions())))
+                                        new StringArgument("currency").setOptional(true).replaceSuggestions(
+                                                ArgumentSuggestions.strings(getCurrencySuggestions())))
                                 .executes((sender, args) -> {
                                     Player target = (Player) args.get("player");
                                     if (target == null) {
@@ -91,7 +101,8 @@ public class EconomyCommand {
                                     CurrencyManager currencyManager = CurrencyManager.getInstance();
                                     Currency currency = currencyManager.getCurrency(currencyId);
                                     if (currency == null || !currency.isEnabled()) {
-                                        MessageUtils.sendMessage(sender, "<red>Moneda no encontrada o deshabilitada: " + currencyId);
+                                        MessageUtils.sendMessage(sender,
+                                                "<red>Moneda no encontrada o deshabilitada: " + currencyId);
                                         return;
                                     }
 
@@ -102,14 +113,16 @@ public class EconomyCommand {
                                         MessageUtils.sendMessage(target,
                                                 "<red>Se te han quitado <yellow>" + currency.formatMoney(amount) +
                                                         "</yellow>. Nuevo saldo: <yellow>" +
-                                                        currency.formatMoney(economyManager.getBalance(target, currencyId))
+                                                        currency.formatMoney(
+                                                                economyManager.getBalance(target, currencyId))
                                                         + "</yellow>");
                                     } else {
                                         MessageUtils.sendMessage(sender,
                                                 "<red>Error: <aqua>" + target.getName()
                                                         + "</aqua> no tiene suficiente dinero. " +
                                                         "Saldo actual: <yellow>"
-                                                        + currency.formatMoney(economyManager.getBalance(target, currencyId))
+                                                        + currency.formatMoney(
+                                                                economyManager.getBalance(target, currencyId))
                                                         + "</yellow>");
                                     }
                                 }),
@@ -119,7 +132,8 @@ public class EconomyCommand {
                                 .withArguments(
                                         new PlayerArgument("player"),
                                         new DoubleArgument("amount", 0),
-                                        new StringArgument("currency").setOptional(true).replaceSuggestions(ArgumentSuggestions.strings(getCurrencySuggestions())))
+                                        new StringArgument("currency").setOptional(true).replaceSuggestions(
+                                                ArgumentSuggestions.strings(getCurrencySuggestions())))
                                 .executes((sender, args) -> {
                                     Player target = (Player) args.get("player");
                                     if (target == null) {
@@ -141,7 +155,8 @@ public class EconomyCommand {
                                     CurrencyManager currencyManager = CurrencyManager.getInstance();
                                     Currency currency = currencyManager.getCurrency(currencyId);
                                     if (currency == null || !currency.isEnabled()) {
-                                        MessageUtils.sendMessage(sender, "<red>Moneda no encontrada o deshabilitada: " + currencyId);
+                                        MessageUtils.sendMessage(sender,
+                                                "<red>Moneda no encontrada o deshabilitada: " + currencyId);
                                         return;
                                     }
 
@@ -163,7 +178,8 @@ public class EconomyCommand {
                         new CommandAPICommand("balance")
                                 .withArguments(
                                         new PlayerArgument("player"),
-                                        new StringArgument("currency").setOptional(true).replaceSuggestions(ArgumentSuggestions.strings(getCurrencySuggestions())))
+                                        new StringArgument("currency").setOptional(true).replaceSuggestions(
+                                                ArgumentSuggestions.strings(getCurrencySuggestions())))
                                 .executes((sender, args) -> {
                                     Player target = (Player) args.get("player");
                                     if (target == null) {
@@ -179,7 +195,8 @@ public class EconomyCommand {
                                     CurrencyManager currencyManager = CurrencyManager.getInstance();
                                     Currency currency = currencyManager.getCurrency(currencyId);
                                     if (currency == null || !currency.isEnabled()) {
-                                        MessageUtils.sendMessage(sender, "<red>Moneda no encontrada o deshabilitada: " + currencyId);
+                                        MessageUtils.sendMessage(sender,
+                                                "<red>Moneda no encontrada o deshabilitada: " + currencyId);
                                         return;
                                     }
 
@@ -207,7 +224,7 @@ public class EconomyCommand {
                                 })
                                 .withSubcommand(
                                         new CommandAPICommand("amount")
-                                                .withArguments(new dev.jorel.commandapi.arguments.IntegerArgument(
+                                                .withArguments(new IntegerArgument(
                                                         "limit", 1, 50))
                                                 .executes((sender, args) -> {
                                                     Object limitObj = args.get("limit");
@@ -224,7 +241,7 @@ public class EconomyCommand {
                         new CommandAPICommand("stats")
                                 .executes((sender, args) -> {
                                     EconomyManager economyManager = EconomyManager.getInstance();
-                                    com.spectrasonic.MythicEconomy.Main plugin = (com.spectrasonic.MythicEconomy.Main) org.bukkit.Bukkit
+                                    Main plugin = (Main) Bukkit
                                             .getPluginManager().getPlugin("MythicEconomy");
 
                                     MessageUtils.sendMessage(sender, "<gold>═══ Estadísticas de Economía ═══</gold>");
@@ -254,7 +271,8 @@ public class EconomyCommand {
                         new CommandAPICommand("setstarting")
                                 .withArguments(
                                         new DoubleArgument("amount", 0),
-                                        new StringArgument("currency").setOptional(true).replaceSuggestions(ArgumentSuggestions.strings(getCurrencySuggestions())))
+                                        new StringArgument("currency").setOptional(true).replaceSuggestions(
+                                                ArgumentSuggestions.strings(getCurrencySuggestions())))
                                 .executes((sender, args) -> {
                                     Object amountObj = args.get("amount");
                                     if (amountObj == null) {
@@ -271,7 +289,8 @@ public class EconomyCommand {
                                     CurrencyManager currencyManager = CurrencyManager.getInstance();
                                     Currency currency = currencyManager.getCurrency(currencyId);
                                     if (currency == null || !currency.isEnabled()) {
-                                        MessageUtils.sendMessage(sender, "<red>Moneda no encontrada o deshabilitada: " + currencyId);
+                                        MessageUtils.sendMessage(sender,
+                                                "<red>Moneda no encontrada o deshabilitada: " + currencyId);
                                         return;
                                     }
 
@@ -288,7 +307,8 @@ public class EconomyCommand {
 
                         // /economy info <currency> - Muestra información de una moneda
                         new CommandAPICommand("info")
-                                .withArguments(new StringArgument("currency").replaceSuggestions(ArgumentSuggestions.strings(getCurrencySuggestions())))
+                                .withArguments(new StringArgument("currency")
+                                        .replaceSuggestions(ArgumentSuggestions.strings(getCurrencySuggestions())))
                                 .executes((sender, args) -> {
                                     String currencyId = (String) args.get("currency");
                                     showCurrencyInfo(sender, currencyId);
@@ -302,7 +322,7 @@ public class EconomyCommand {
                 .toArray(String[]::new);
     }
 
-    private void listCurrencies(org.bukkit.command.CommandSender sender) {
+    private void listCurrencies(CommandSender sender) {
         CurrencyManager currencyManager = CurrencyManager.getInstance();
 
         MessageUtils.sendMessage(sender, "<green><bold>=== MONEDAS DISPONIBLES ===</bold></green>");
@@ -322,7 +342,7 @@ public class EconomyCommand {
                 "<gray>Total: " + currencyManager.getEnabledCurrenciesCount() + " monedas habilitadas</gray>");
     }
 
-    private void showCurrencyInfo(org.bukkit.command.CommandSender sender, String currencyId) {
+    private void showCurrencyInfo(CommandSender sender, String currencyId) {
         CurrencyManager currencyManager = CurrencyManager.getInstance();
         Currency currency = currencyManager.getCurrency(currencyId);
 
@@ -353,9 +373,9 @@ public class EconomyCommand {
     /**
      * Muestra el top de jugadores más ricos
      */
-    private void showTopBalances(org.bukkit.command.CommandSender sender, int limit) {
+    private void showTopBalances(CommandSender sender, int limit) {
         EconomyManager economyManager = EconomyManager.getInstance();
-        java.util.Map<String, Double> topBalances = economyManager.getTopBalances(limit);
+        Map<String, Double> topBalances = economyManager.getTopBalances(limit);
 
         if (topBalances.isEmpty()) {
             MessageUtils.sendMessage(sender, "<red>No hay datos de jugadores disponibles.");
@@ -365,7 +385,7 @@ public class EconomyCommand {
         MessageUtils.sendMessage(sender, "<gold>═══ Top " + limit + " Jugadores Más Ricos ═══</gold>");
 
         int position = 1;
-        for (java.util.Map.Entry<String, Double> entry : topBalances.entrySet()) {
+        for (Map.Entry<String, Double> entry : topBalances.entrySet()) {
             String playerName = entry.getKey();
             double balance = entry.getValue();
 

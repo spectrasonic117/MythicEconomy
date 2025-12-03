@@ -74,7 +74,7 @@ public class BenchmarkTool {
 
         // Crear jugador en la base de datos usando el provider directamente
         if (economyManager.getAsyncDataProvider() != null) {
-            economyManager.getAsyncDataProvider().createPlayer(playerUUID, "default")
+            economyManager.getAsyncDataProvider().createPlayerAsync(playerUUID, "default")
                     .thenCompose(ignored -> runOperations(userId, playerUUID, operationsCount))
                     .exceptionally(throwable -> {
                         failedOperations.incrementAndGet();
@@ -108,7 +108,7 @@ public class BenchmarkTool {
                         case 0:
                             // Obtener balance
                             if (economyManager.getAsyncDataProvider() != null) {
-                                economyManager.getAsyncDataProvider().getBalance(playerUUID, "default")
+                                economyManager.getAsyncDataProvider().getBalanceAsync(playerUUID, "default")
                                         .thenAccept(balance -> {
                                             long latency = System.nanoTime() - operationStart;
                                             successfulOperations.incrementAndGet();
@@ -124,7 +124,7 @@ public class BenchmarkTool {
                             // Añadir dinero
                             double amountToAdd = ThreadLocalRandom.current().nextDouble(10, 100);
                             if (economyManager.getAsyncDataProvider() != null) {
-                                economyManager.getAsyncDataProvider().addBalance(playerUUID, amountToAdd, "default")
+                                economyManager.getAsyncDataProvider().addBalanceAsync(playerUUID, amountToAdd, "default")
                                         .thenAccept(success -> {
                                             long latency = System.nanoTime() - operationStart;
                                             if (success) {
@@ -145,7 +145,7 @@ public class BenchmarkTool {
                             double amountToRemove = ThreadLocalRandom.current().nextDouble(5, 50);
                             if (economyManager.getAsyncDataProvider() != null) {
                                 economyManager.getAsyncDataProvider()
-                                        .removeBalance(playerUUID, amountToRemove, "default")
+                                        .removeBalanceAsync(playerUUID, amountToRemove, "default")
                                         .thenAccept(success -> {
                                             long latency = System.nanoTime() - operationStart;
                                             if (success) {
@@ -166,7 +166,7 @@ public class BenchmarkTool {
                             double checkAmount = ThreadLocalRandom.current().nextDouble(1, 200);
                             if (economyManager.getAsyncDataProvider() != null) {
                                 economyManager.getAsyncDataProvider()
-                                        .hasEnoughBalance(playerUUID, checkAmount, "default")
+                                        .hasEnoughBalanceAsync(playerUUID, checkAmount, "default")
                                         .thenAccept(hasEnough -> {
                                             long latency = System.nanoTime() - operationStart;
                                             successfulOperations.incrementAndGet();

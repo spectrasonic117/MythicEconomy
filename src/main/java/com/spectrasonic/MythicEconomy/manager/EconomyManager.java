@@ -13,8 +13,10 @@ import com.spectrasonic.MythicEconomy.database.EconomyDataProvider;
 import com.spectrasonic.MythicEconomy.database.InternalEconomyProvider;
 import com.spectrasonic.MythicEconomy.database.MongoDBConnection;
 import com.spectrasonic.MythicEconomy.database.MongoDBEconomyProvider;
+import com.spectrasonic.MythicEconomy.database.MySQLAsyncConnection;
 import com.spectrasonic.MythicEconomy.database.MySQLConnection;
 import com.spectrasonic.MythicEconomy.database.MySQLEconomyProvider;
+import com.spectrasonic.MythicEconomy.database.MySQLEconomyProviderAsync;
 import com.spectrasonic.MythicEconomy.models.Currency;
 
 import java.io.File;
@@ -31,6 +33,7 @@ public class EconomyManager {
     private EconomyDataProvider dataProvider;
     private MongoDBConnection mongoConnection;
     private MySQLConnection mysqlConnection;
+    private MySQLAsyncConnection mysqlAsyncConnection;
     private CurrencyManager currencyManager;
 
     // Configuración de respaldo para sistema interno
@@ -84,10 +87,17 @@ public class EconomyManager {
         plugin.getLogger().info("Configuración cargada - Saldo inicial: " + startingBalance + " " + currencyName);
     }
 
+    // Inicializa MySQL de forma síncrona durante el startup
+    private boolean initializeMySQLSync() throws Exception {
+        // Ejecutar la inicialización de forma síncrona para evitar problemas con el scheduler
+        return mysqlAsyncConnection.initializeSync();
+    }
+
     // Inicializa el proveedor de datos basado en la configuración
     private void initializeDataProvider() {
         FileConfiguration config = plugin.getConfig();
         boolean useExternalDB = config.getBoolean("database.use-external-database", false);
+        boolean asyncMode = config.getBoolean("database.async-mode", false);
         String databaseType = config.getString("database.type", "FILE");
 
         if (useExternalDB && "MONGODB".equalsIgnoreCase(databaseType)) {
@@ -104,15 +114,38 @@ public class EconomyManager {
             }
         } else if (useExternalDB && "MYSQL".equalsIgnoreCase(databaseType)) {
             // Usar MySQL
-            this.mysqlConnection = new MySQLConnection(plugin);
+            if (asyncMode) {
+                // Modo asíncrono con HikariCP
+                this.mysqlAsyncConnection = new MySQLAsyncConnection(plugin);
 
-            if (mysqlConnection.connect()) {
-                this.dataProvider = new MySQLEconomyProvider(plugin, mysqlConnection);
-                plugin.getLogger().info("Usando MySQL como proveedor de datos de economía");
+                try {
+                    // Inicializar la conexión de forma síncrona durante el startup para evitar problemas con el scheduler
+                    boolean success = initializeMySQLSync();
+
+                    if (success) {
+                        this.dataProvider = new MySQLEconomyProviderAsync(plugin, mysqlAsyncConnection);
+                        plugin.getLogger().info("Usando MySQL asíncrono como proveedor de datos de economía");
+                    } else {
+                        // Fallback al sistema interno si MySQL falla
+                        plugin.getLogger().warning("No se pudo conectar a MySQL asíncrono, usando sistema interno");
+                        this.dataProvider = new InternalEconomyProvider(plugin, this);
+                    }
+                } catch (Exception e) {
+                    plugin.getLogger().severe("Error al inicializar MySQL asíncrono: " + e.getMessage());
+                    this.dataProvider = new InternalEconomyProvider(plugin, this);
+                }
             } else {
-                // Fallback al sistema interno si MySQL falla
-                plugin.getLogger().warning("No se pudo conectar a MySQL, usando sistema interno");
-                this.dataProvider = new InternalEconomyProvider(plugin, this);
+                // Modo síncrono
+                this.mysqlConnection = new MySQLConnection(plugin);
+
+                if (mysqlConnection.connect()) {
+                    this.dataProvider = new MySQLEconomyProvider(plugin, mysqlConnection);
+                    plugin.getLogger().info("Usando MySQL como proveedor de datos de economía");
+                } else {
+                    // Fallback al sistema interno si MySQL falla
+                    plugin.getLogger().warning("No se pudo conectar a MySQL, usando sistema interno");
+                    this.dataProvider = new InternalEconomyProvider(plugin, this);
+                }
             }
         } else {
             // Usar sistema interno
@@ -263,6 +296,8 @@ public class EconomyManager {
             mongoConnection.reloadConfiguration();
         } else if (dataProvider instanceof MySQLEconomyProvider) {
             mysqlConnection.reloadConfiguration();
+        } else if (dataProvider instanceof MySQLEconomyProviderAsync) {
+            mysqlAsyncConnection.reloadConfiguration().join(); // Esperar a que se complete la recarga asíncrona
         }
 
         plugin.getLogger().info("Configuración de economía recargada.");
@@ -287,6 +322,8 @@ public class EconomyManager {
             balance = ((MongoDBEconomyProvider) dataProvider).getBalance(player.getUniqueId(), currencyId);
         } else if (dataProvider instanceof MySQLEconomyProvider) {
             balance = ((MySQLEconomyProvider) dataProvider).getBalance(player.getUniqueId(), currencyId);
+        } else if (dataProvider instanceof MySQLEconomyProviderAsync) {
+            balance = ((MySQLEconomyProviderAsync) dataProvider).getBalance(player.getUniqueId(), currencyId);
         } else {
             // Fallback para otros proveedores
             balance = dataProvider.getBalance(player.getUniqueId());
@@ -319,6 +356,8 @@ public class EconomyManager {
             ((MongoDBEconomyProvider) dataProvider).setBalance(player.getUniqueId(), amount, currencyId);
         } else if (dataProvider instanceof MySQLEconomyProvider) {
             ((MySQLEconomyProvider) dataProvider).setBalance(player.getUniqueId(), amount, currencyId);
+        } else if (dataProvider instanceof MySQLEconomyProviderAsync) {
+            ((MySQLEconomyProviderAsync) dataProvider).setBalance(player.getUniqueId(), amount, currencyId);
         } else {
             // Fallback para otros proveedores - solo funciona con default
             if (currencyId.equals("default")) {
@@ -362,6 +401,8 @@ public class EconomyManager {
             return ((MongoDBEconomyProvider) dataProvider).addBalance(player.getUniqueId(), amount, currencyId);
         } else if (dataProvider instanceof MySQLEconomyProvider) {
             return ((MySQLEconomyProvider) dataProvider).addBalance(player.getUniqueId(), amount, currencyId);
+        } else if (dataProvider instanceof MySQLEconomyProviderAsync) {
+            return ((MySQLEconomyProviderAsync) dataProvider).addBalance(player.getUniqueId(), amount, currencyId);
         } else {
             // Fallback para otros proveedores - solo funciona con default
             if (currencyId.equals("default")) {
@@ -496,7 +537,7 @@ public class EconomyManager {
 
     // Verifica si está usando MySQL
     public boolean isUsingMySQL() {
-        return dataProvider instanceof MySQLEconomyProvider;
+        return dataProvider instanceof MySQLEconomyProvider || dataProvider instanceof MySQLEconomyProviderAsync;
     }
     // ========== MÉTODOS NUEVOS PARA SOPORTE DE NOMBRES DE JUGADORES ==========
 

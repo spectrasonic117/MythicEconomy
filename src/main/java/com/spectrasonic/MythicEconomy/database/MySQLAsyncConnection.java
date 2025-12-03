@@ -6,13 +6,17 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.spectrasonic.MythicEconomy.utils.MessageUtils;
+import com.spectrasonic.MythicEconomy.utils.AsyncUtils;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Conexión MySQL asíncrona con HikariCP para alto rendimiento y concurrencia.
@@ -24,6 +28,7 @@ public class MySQLAsyncConnection {
     private final JavaPlugin plugin;
     private HikariDataSource dataSource;
     private boolean initialized = false;
+    private ScheduledExecutorService hikariExecutor;
 
     // Configuración de pool
     @Getter
@@ -76,15 +81,74 @@ public class MySQLAsyncConnection {
     }
 
     /**
+     * Inicializa el pool de conexiones de forma síncrona (para uso durante startup)
+     */
+    public boolean initializeSync() throws Exception {
+        if (initialized) {
+            log.warn("MySQLAsyncConnection ya fue inicializado");
+            return true;
+        }
+
+        // Create executor for HikariCP background tasks using server's async scheduler
+        hikariExecutor = Executors.newScheduledThreadPool(2, r -> {
+            Thread t = new Thread(r, "HikariCP-" + plugin.getName());
+            t.setDaemon(true);
+            return t;
+        });
+
+        HikariConfig config = new HikariConfig();
+        String jdbcUrl = String.format(
+                "jdbc:mysql://%s:%d/%s?useSSL=%s&serverTimezone=UTC&autoReconnect=true&failOverReadOnly=false",
+                host, port, database, useSSL);
+
+        config.setJdbcUrl(jdbcUrl);
+        config.setUsername(username);
+        config.setPassword(password);
+        config.setMaximumPoolSize(maximumPoolSize);
+        config.setMinimumIdle(minimumIdle);
+        config.setConnectionTimeout(connectionTimeout);
+        config.setIdleTimeout(idleTimeout);
+        config.setMaxLifetime(maxLifetime);
+        config.setLeakDetectionThreshold(60000); // 1 min
+        config.setScheduledExecutor(hikariExecutor); // Set custom executor for background tasks
+
+        // Configuración para alto rendimiento
+        config.addDataSourceProperty("cachePrepStmts", "true");
+        config.addDataSourceProperty("prepStmtCacheSize", "250");
+        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        config.addDataSourceProperty("useServerPrepStmts", "true");
+        config.addDataSourceProperty("rewriteBatchedStatements", "true");
+
+        dataSource = new HikariDataSource(config);
+
+        // Crear tablas si no existen
+        createTablesIfNotExistsSync();
+
+        initialized = true;
+        MessageUtils.sendConsoleMessage("<green>Conexión MySQL asíncrona inicializada exitosamente</green>");
+        log.info("MySQL pool initialized: max={} idle={} timeout={}",
+                maximumPoolSize, minimumIdle, connectionTimeout);
+
+        return true;
+    }
+
+    /**
      * Inicializa el pool de conexiones de forma asíncrona
      */
     public CompletableFuture<Boolean> initialize() {
-        return CompletableFuture.supplyAsync(() -> {
+        return AsyncUtils.supplyAsync(plugin, () -> {
             try {
                 if (initialized) {
                     log.warn("MySQLAsyncConnection ya fue inicializado");
                     return true;
                 }
+
+                // Create executor for HikariCP background tasks using server's async scheduler
+                hikariExecutor = Executors.newScheduledThreadPool(2, r -> {
+                    Thread t = new Thread(r, "HikariCP-" + plugin.getName());
+                    t.setDaemon(true);
+                    return t;
+                });
 
                 HikariConfig config = new HikariConfig();
                 String jdbcUrl = String.format(
@@ -100,6 +164,7 @@ public class MySQLAsyncConnection {
                 config.setIdleTimeout(idleTimeout);
                 config.setMaxLifetime(maxLifetime);
                 config.setLeakDetectionThreshold(60000); // 1 min
+                config.setScheduledExecutor(hikariExecutor); // Set custom executor for background tasks
 
                 // Configuración para alto rendimiento
                 config.addDataSourceProperty("cachePrepStmts", "true");
@@ -129,10 +194,26 @@ public class MySQLAsyncConnection {
     }
 
     /**
+     * Obtiene una conexión del pool de forma síncrona (para uso durante
+     * inicialización)
+     */
+    public Optional<Connection> getConnectionSync() {
+        try {
+            if (!initialized || dataSource == null || dataSource.isClosed()) {
+                return Optional.empty();
+            }
+            return Optional.of(dataSource.getConnection());
+        } catch (SQLException e) {
+            log.error("Error al obtener conexión del pool", e);
+            return Optional.empty();
+        }
+    }
+
+    /**
      * Obtiene una conexión del pool de forma asíncrona
      */
     public CompletableFuture<Connection> getConnection() {
-        return CompletableFuture.supplyAsync(() -> {
+        return AsyncUtils.supplyAsync(plugin, () -> {
             try {
                 if (!initialized || dataSource == null || dataSource.isClosed()) {
                     throw new SQLException("DataSource no inicializado o cerrado");
@@ -149,7 +230,7 @@ public class MySQLAsyncConnection {
      * Verifica si la conexión está activa de forma asíncrona
      */
     public CompletableFuture<Boolean> isConnected() {
-        return CompletableFuture.supplyAsync(() -> {
+        return AsyncUtils.supplyAsync(plugin, () -> {
             try {
                 if (!initialized || dataSource == null) {
                     return false;
@@ -183,7 +264,7 @@ public class MySQLAsyncConnection {
      * Cierra el pool de forma asíncrona
      */
     public CompletableFuture<Void> shutdown() {
-        return CompletableFuture.runAsync(() -> {
+        return AsyncUtils.runAsync(plugin, () -> {
             try {
                 if (dataSource != null && !dataSource.isClosed()) {
                     dataSource.close();
@@ -191,10 +272,55 @@ public class MySQLAsyncConnection {
                     MessageUtils.sendConsoleMessage("<yellow>Conexión MySQL asíncrona cerrada</yellow>");
                     log.info("MySQL pool shutdown completed");
                 }
+
+                // Shutdown the custom executor
+                if (hikariExecutor != null && !hikariExecutor.isShutdown()) {
+                    hikariExecutor.shutdown();
+                    log.info("HikariCP executor shutdown completed");
+                }
             } catch (Exception e) {
                 log.error("Error al cerrar MySQL pool", e);
+                throw new RuntimeException(e);
             }
         });
+    }
+
+    /**
+     * Crea las tablas necesarias si no existen (versión síncrona)
+     */
+    private void createTablesIfNotExistsSync() throws SQLException {
+        try (Connection conn = dataSource.getConnection()) {
+
+            // Tabla de balances
+            String createBalancesTable = """
+                    CREATE TABLE IF NOT EXISTS player_balances (
+                        player_uuid VARCHAR(36) NOT NULL,
+                        currency_id VARCHAR(50) NOT NULL,
+                        balance DECIMAL(19,2) NOT NULL DEFAULT 0.00,
+                        last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        PRIMARY KEY (player_uuid, currency_id),
+                        INDEX idx_currency_id (currency_id),
+                        INDEX idx_player_uuid (player_uuid)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+                    """;
+
+            // Tabla de nombres de jugadores
+            String createNamesTable = """
+                    CREATE TABLE IF NOT EXISTS player_names (
+                        player_uuid VARCHAR(36) NOT NULL,
+                        player_name VARCHAR(64) NOT NULL,
+                        last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        PRIMARY KEY (player_uuid),
+                        INDEX idx_player_name (player_name)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+                    """;
+
+            try (var stmt = conn.createStatement()) {
+                stmt.execute(createBalancesTable);
+                stmt.execute(createNamesTable);
+                log.info("Tablas MySQL verificadas/creadas exitosamente");
+            }
+        }
     }
 
     /**
@@ -239,16 +365,17 @@ public class MySQLAsyncConnection {
      * Recarga la configuración y reconecta si es necesario
      */
     public CompletableFuture<Boolean> reloadConfiguration() {
-        return CompletableFuture.supplyAsync(() -> {
+        return AsyncUtils.supplyAsync(plugin, () -> {
             try {
                 loadConfiguration();
 
                 if (initialized) {
-                    shutdown().join(); // Esperar a que se cierre
-                    return initialize().join(); // Esperar a que se inicialice
+                    // Esperar a que se cierre y se inicialice de forma síncrona dentro del task
+                    shutdown().get();
+                    return initialize().get();
+                } else {
+                    return true;
                 }
-
-                return true;
             } catch (Exception e) {
                 log.error("Error al recargar configuración MySQL", e);
                 return false;

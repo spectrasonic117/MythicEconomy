@@ -76,6 +76,7 @@ public final class Main extends JavaPlugin {
         }
 
         if (placeholderAPIEnabled && placeholders != null) {
+            placeholders.cleanup();
             placeholders.unregister();
             MessageUtils.sendConsoleMessage("<yellow>Placeholders de PlaceholderAPI desregistrados.</yellow>");
         }

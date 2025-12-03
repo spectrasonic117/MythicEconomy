@@ -30,7 +30,7 @@ public interface EconomyDataProvider {
     void createPlayer(UUID playerUUID);
 
     // ========== MÉTODOS PARA MÚLTIPLES MONEDAS ==========
-    
+
     /**
      * Obtiene el saldo de un jugador en una moneda específica
      */

@@ -6,7 +6,7 @@ import dev.jorel.commandapi.arguments.IntegerArgument;
 import com.spectrasonic.MythicEconomy.database.BenchmarkTool;
 import com.spectrasonic.MythicEconomy.utils.MessageUtils;
 import com.spectrasonic.MythicEconomy.manager.EconomyManagerAsync;
-
+import dev.jorel.commandapi.CommandPermission;
 // Comando para ejecutar benchmarks de rendimiento del sistema económico asíncrono.
 
 public class BenchmarkCommand {
@@ -19,7 +19,7 @@ public class BenchmarkCommand {
 
     public void register() {
         new CommandAPICommand("benchmark")
-                .withPermission("MythicEconomy.admin.benchmark")
+                .withPermission(CommandPermission.OP)
                 .withSubcommand(
                         new CommandAPICommand("start")
                                 .withArguments(

@@ -8,7 +8,6 @@ import org.bukkit.Bukkit;
 import com.spectrasonic.MythicEconomy.utils.MessageUtils;
 import com.spectrasonic.MythicEconomy.api.events.MoneyAddEvent;
 import com.spectrasonic.MythicEconomy.api.events.MoneyRemoveEvent;
-import com.spectrasonic.MythicEconomy.database.AsyncEconomyDataProvider;
 import com.spectrasonic.MythicEconomy.database.MySQLAsyncConnection;
 import com.spectrasonic.MythicEconomy.database.MySQLEconomyProviderAsync;
 import com.spectrasonic.MythicEconomy.models.Currency;
@@ -29,7 +28,7 @@ public class EconomyManagerAsync {
 
     private static EconomyManagerAsync instance;
     private final JavaPlugin plugin;
-    private AsyncEconomyDataProvider asyncDataProvider;
+    private MySQLEconomyProviderAsync asyncDataProvider;
     private MySQLAsyncConnection asyncConnection;
     private CurrencyManager currencyManager;
     private final Map<UUID, Double> fallbackBalances;
@@ -113,7 +112,7 @@ public class EconomyManagerAsync {
             return CompletableFuture.completedFuture(getBalanceSync(player, currencyId));
         }
 
-        return asyncDataProvider.getBalance(player.getUniqueId(), currencyId)
+        return asyncDataProvider.getBalanceAsync(player.getUniqueId(), currencyId)
                 .exceptionally(throwable -> {
                     log.error("Error al obtener balance para {} en moneda {}", player.getName(), currencyId, throwable);
                     return 0.0;
@@ -145,7 +144,7 @@ public class EconomyManagerAsync {
             amount = currency.getMaxBalance();
         }
 
-        return asyncDataProvider.setBalance(player.getUniqueId(), amount, currencyId)
+        return asyncDataProvider.setBalanceAsync(player.getUniqueId(), amount, currencyId)
                 .exceptionally(throwable -> {
                     log.error("Error al establecer balance para {} en moneda {}", player.getName(), currencyId,
                             throwable);
@@ -196,7 +195,7 @@ public class EconomyManagerAsync {
                     }
 
                     // Actualizar balance de forma asíncrona
-                    return asyncDataProvider.addBalance(player.getUniqueId(), amount, currencyId)
+                    return asyncDataProvider.addBalanceAsync(player.getUniqueId(), amount, currencyId)
                             .exceptionally(throwable -> {
                                 log.error("Error al agregar dinero para {} en moneda {}", player.getName(), currencyId,
                                         throwable);
@@ -244,7 +243,7 @@ public class EconomyManagerAsync {
                     }
 
                     // Actualizar balance de forma asíncrona
-                    return asyncDataProvider.removeBalance(player.getUniqueId(), amount, currencyId)
+                    return asyncDataProvider.removeBalanceAsync(player.getUniqueId(), amount, currencyId)
                             .exceptionally(throwable -> {
                                 log.error("Error al remover dinero para {} en moneda {}", player.getName(), currencyId,
                                         throwable);
@@ -275,7 +274,7 @@ public class EconomyManagerAsync {
             return CompletableFuture.completedFuture(false);
         }
 
-        return asyncDataProvider.hasEnoughBalance(player.getUniqueId(), amount, currencyId)
+        return asyncDataProvider.hasEnoughBalanceAsync(player.getUniqueId(), amount, currencyId)
                 .exceptionally(throwable -> {
                     log.error("Error al verificar saldo para {} en moneda {}", player.getName(), currencyId, throwable);
                     return false;
@@ -298,7 +297,7 @@ public class EconomyManagerAsync {
             return CompletableFuture.completedFuture(null);
         }
 
-        return asyncDataProvider.createPlayer(player.getUniqueId(), currencyId)
+        return asyncDataProvider.createPlayerAsync(player.getUniqueId(), currencyId)
                 .exceptionally(throwable -> {
                     log.error("Error al crear jugador {} para moneda {}", player.getName(), currencyId, throwable);
                     return null;
@@ -313,7 +312,7 @@ public class EconomyManagerAsync {
             return CompletableFuture.completedFuture((long) getTotalPlayersSync(currencyId));
         }
 
-        return asyncDataProvider.getTotalPlayers(currencyId)
+        return asyncDataProvider.getTotalPlayersAsync(currencyId)
                 .exceptionally(throwable -> {
                     log.error("Error al obtener total de jugadores para moneda {}", currencyId, throwable);
                     return 0L;
@@ -325,7 +324,7 @@ public class EconomyManagerAsync {
             return CompletableFuture.completedFuture(getTotalMoneySync(currencyId));
         }
 
-        return asyncDataProvider.getTotalMoney(currencyId)
+        return asyncDataProvider.getTotalMoneyAsync(currencyId)
                 .exceptionally(throwable -> {
                     log.error("Error al obtener dinero total para moneda {}", currencyId, throwable);
                     return 0.0;
@@ -337,7 +336,7 @@ public class EconomyManagerAsync {
             return CompletableFuture.completedFuture(getTopBalancesSync(currencyId, limit));
         }
 
-        return asyncDataProvider.getTopBalances(currencyId, limit)
+        return asyncDataProvider.getTopBalancesAsync(currencyId, limit)
                 .exceptionally(throwable -> {
                     log.error("Error al obtener top balances para moneda {}", currencyId, throwable);
                     return new Object[0][0];
@@ -356,10 +355,10 @@ public class EconomyManagerAsync {
                 } catch (Exception e) {
                     log.error("Error en fallback updatePlayerName", e);
                 }
-            });
+            }, runnable -> plugin.getServer().getScheduler().runTaskAsynchronously(plugin, runnable));
         }
 
-        return asyncDataProvider.updatePlayerName(playerUUID, playerName)
+        return asyncDataProvider.updatePlayerNameAsync(playerUUID, playerName)
                 .exceptionally(throwable -> {
                     log.error("Error al actualizar nombre de jugador {}", playerUUID, throwable);
                     return null;
@@ -436,7 +435,7 @@ public class EconomyManagerAsync {
     /**
      * Obtiene el proveedor de datos asíncrono
      */
-    public AsyncEconomyDataProvider getAsyncDataProvider() {
+    public MySQLEconomyProviderAsync getAsyncDataProvider() {
         return asyncDataProvider;
     }
 

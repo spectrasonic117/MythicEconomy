@@ -4,6 +4,7 @@ import com.spectrasonic.MythicEconomy.Main;
 import com.spectrasonic.MythicEconomy.manager.EconomyManager;
 import com.spectrasonic.MythicEconomy.manager.CurrencyManager;
 import com.spectrasonic.MythicEconomy.models.Currency;
+import com.spectrasonic.MythicEconomy.leaderboard.LeaderboardCache;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -15,11 +16,24 @@ public class MythicEconomyPlaceholders extends PlaceholderExpansion {
     private final Main plugin;
     private final EconomyManager economyManager;
     private final CurrencyManager currencyManager;
+    private final LeaderboardCache leaderboardCache;
 
     public MythicEconomyPlaceholders(Main plugin) {
         this.plugin = plugin;
         this.economyManager = plugin.getEconomyManager();
         this.currencyManager = economyManager.getCurrencyManager();
+        this.leaderboardCache = new LeaderboardCache(plugin, 100, 20L); // 100 jugadores, 20 ticks (1 segundo)
+        
+        // Iniciar el sistema de cache
+        this.leaderboardCache.start();
+    }
+    
+    /**
+     * Obtiene la instancia del LeaderboardCache para acceso externo
+     * @return LeaderboardCache instance
+     */
+    public LeaderboardCache getLeaderboardCache() {
+        return leaderboardCache;
     }
 
     @Override
@@ -46,9 +60,15 @@ public class MythicEconomyPlaceholders extends PlaceholderExpansion {
     public boolean canRegister() {
         return true;
     }
-
-    public int getUpdateInterval() {
-        return 10; // Actualizar cada 10 ticks (0.5 segundos)
+    
+    /**
+     * Método para limpiar recursos antes de que el plugin se deshabilite
+     */
+    public void cleanup() {
+        // Detener el sistema de cache al desregistrar
+        if (leaderboardCache != null) {
+            leaderboardCache.stop();
+        }
     }
 
     @Override
@@ -330,6 +350,113 @@ public class MythicEconomyPlaceholders extends PlaceholderExpansion {
                         return getTopMoney(position);
                     } catch (NumberFormatException e) {
                         return "N/A";
+                    }
+                }
+
+                // ========== NUEVOS PLACEHOLDERS DE LEADERBOARD CON CACHE ==========
+                
+                // Placeholder para obtener nombre del jugador en posición N: %eco_<currency>_<N>_player%
+                if (params.matches("^[a-zA-Z0-9_]+_\\d+_player$")) {
+                    try {
+                        String[] parts = params.split("_");
+                        if (parts.length >= 3) {
+                            // Reconstruir el ID de la moneda (puede contener guiones bajos)
+                            StringBuilder currencyIdBuilder = new StringBuilder();
+                            for (int i = 0; i < parts.length - 2; i++) {
+                                if (i > 0) currencyIdBuilder.append("_");
+                                currencyIdBuilder.append(parts[i]);
+                            }
+                            String currencyId = currencyIdBuilder.toString();
+                            int position = Integer.parseInt(parts[parts.length - 2]);
+                            
+                            // Verificar que la moneda exista y esté habilitada
+                            Currency currency = currencyManager.getCurrency(currencyId);
+                            if (currency != null && currency.isEnabled()) {
+                                return leaderboardCache.getPlayerName(currencyId, position);
+                            }
+                        }
+                        return "N/A";
+                    } catch (Exception e) {
+                        return "N/A";
+                    }
+                }
+
+                // Placeholder para obtener valor del jugador en posición N: %eco_<currency>_<N>_value%
+                if (params.matches("^[a-zA-Z0-9_]+_\\d+_value$")) {
+                    try {
+                        String[] parts = params.split("_");
+                        if (parts.length >= 3) {
+                            // Reconstruir el ID de la moneda (puede contener guiones bajos)
+                            StringBuilder currencyIdBuilder = new StringBuilder();
+                            for (int i = 0; i < parts.length - 2; i++) {
+                                if (i > 0) currencyIdBuilder.append("_");
+                                currencyIdBuilder.append(parts[i]);
+                            }
+                            String currencyId = currencyIdBuilder.toString();
+                            int position = Integer.parseInt(parts[parts.length - 2]);
+                            
+                            // Verificar que la moneda exista y esté habilitada
+                            Currency currency = currencyManager.getCurrency(currencyId);
+                            if (currency != null && currency.isEnabled()) {
+                                return leaderboardCache.getPlayerBalance(currencyId, position);
+                            }
+                        }
+                        return "N/A";
+                    } catch (Exception e) {
+                        return "N/A";
+                    }
+                }
+
+                // Placeholder para obtener UUID del jugador en posición N: %eco_<currency>_<N>_uuid%
+                if (params.matches("^[a-zA-Z0-9_]+_\\d+_uuid$")) {
+                    try {
+                        String[] parts = params.split("_");
+                        if (parts.length >= 3) {
+                            // Reconstruir el ID de la moneda (puede contener guiones bajos)
+                            StringBuilder currencyIdBuilder = new StringBuilder();
+                            for (int i = 0; i < parts.length - 2; i++) {
+                                if (i > 0) currencyIdBuilder.append("_");
+                                currencyIdBuilder.append(parts[i]);
+                            }
+                            String currencyId = currencyIdBuilder.toString();
+                            int position = Integer.parseInt(parts[parts.length - 2]);
+                            
+                            // Verificar que la moneda exista y esté habilitada
+                            Currency currency = currencyManager.getCurrency(currencyId);
+                            if (currency != null && currency.isEnabled()) {
+                                return leaderboardCache.getPlayerUuid(currencyId, position);
+                            }
+                        }
+                        return "N/A";
+                    } catch (Exception e) {
+                        return "N/A";
+                    }
+                }
+
+                // Placeholder para obtener valor sin formato del jugador en posición N: %eco_<currency>_<N>_value_raw%
+                if (params.matches("^[a-zA-Z0-9_]+_\\d+_value_raw$")) {
+                    try {
+                        String[] parts = params.split("_");
+                        if (parts.length >= 4) {
+                            // Reconstruir el ID de la moneda (puede contener guiones bajos)
+                            StringBuilder currencyIdBuilder = new StringBuilder();
+                            for (int i = 0; i < parts.length - 3; i++) {
+                                if (i > 0) currencyIdBuilder.append("_");
+                                currencyIdBuilder.append(parts[i]);
+                            }
+                            String currencyId = currencyIdBuilder.toString();
+                            int position = Integer.parseInt(parts[parts.length - 3]);
+                            
+                            // Verificar que la moneda exista y esté habilitada
+                            Currency currency = currencyManager.getCurrency(currencyId);
+                            if (currency != null && currency.isEnabled()) {
+                                double balance = leaderboardCache.getPlayerBalanceRaw(currencyId, position);
+                                return String.format(currency.isDecimal() ? "%.2f" : "%.0f", balance);
+                            }
+                        }
+                        return "0.00";
+                    } catch (Exception e) {
+                        return "0.00";
                     }
                 }
 
